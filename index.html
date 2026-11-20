@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Race: Haiti Bus vs World | Cockpit & Bridge Edition</title>
+  <meta name="description" content="Race: Haiti Bus vs World — First-Person Cockpit & Suspension Bridge 3D Racing Game built by Gesner Deslandes, Software Developer." />
+  <meta name="author" content="Gesner Deslandes" />
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #0b1628;
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      color: #ffffff;
+    }
+    #game-canvas-container {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Nitrous Screen Speed-Lines Vignette */
+    #nitro-vignette {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      background: radial-gradient(circle at center, transparent 52%, rgba(0, 195, 255, 0.35) 100%);
+      box-shadow: inset 0 0 80px rgba(0, 212, 255, 0.55);
+    }
+    #nitro-vignette.active {
+      opacity: 1;
+    }
+
+    /* ================= TOP-LEFT HUD (Trophy, Distance, Haiti Team) ================= */
+    #hud-top-left {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 30;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      pointer-events: none;
+    }
+    .hud-stat-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(90deg, rgba(10, 15, 24, 0.85) 0%, rgba(10, 15, 24, 0.35) 100%);
+      border-left: 3px solid #38bdf8;
+      padding: 4px 12px 4px 8px;
+      border-radius: 4px;
+      min-width: 165px;
+      backdrop-filter: blur(4px);
+    }
+    .hud-stat-row.distance-row {
+      border-left-color: #84cc16;
+    }
+    #score-val {
+      font-size: 20px;
+      font-weight: 800;
+      color: #38bdf8;
+      letter-spacing: 0.5px;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+    }
+    #dist-val {
+      font-size: 16px;
+      font-weight: 800;
+      color: #a3e635;
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+    }
+    .dist-unit {
+      font-size: 11px;
+      color: #ecfccb;
+      background: rgba(132, 204, 22, 0.25);
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-weight: 700;
+    }
+
+    /* Compact Haiti Flag & Deslandes Crew Card */
+    #haiti-crew-badge {
+      background: rgba(8, 13, 24, 0.78);
+      border-left: 4px solid #D21034;
+      border-radius: 6px;
+      padding: 6px 10px;
+      backdrop-filter: blur(6px);
+      max-width: 270px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    }
+    .haiti-flag-header {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #fef08a;
+      margin-bottom: 3px;
+    }
+    .haiti-flag-icon {
+      width: 26px;
+      height: 16px;
+      border-radius: 2px;
+      border: 1px solid #facc15;
+      background: linear-gradient(to bottom, #00209F 50%, #D21034 50%);
+      position: relative;
+      flex-shrink: 0;
+    }
+    .haiti-flag-icon::after {
+      content: '';
+      position: absolute;
+      inset: 4px 8px;
+      background: #ffffff;
+      border-radius: 1px;
+    }
+    .crew-names {
+      font-size: 10px;
+      line-height: 1.32;
+      color: #e2e8f0;
+    }
+    .crew-names strong {
+      color: #fde047;
+    }
+
+    /* ================= LEFT-SIDE FLOATING CONTROLS (Pause, Camera, Headlight) ================= */
+    #hud-left-controls {
+      position: fixed;
+      top: 32%;
+      left: 14px;
+      z-index: 35;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .hud-left-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .glass-icon-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.22);
+      border: 1.5px solid rgba(255, 255, 255, 0.55);
+      backdrop-filter: blur(6px);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+      transition: transform 0.12s ease, background 0.15s ease;
+    }
+    .glass-icon-btn:active {
+      transform: scale(0.92);
+    }
+    .glass-icon-btn.active {
+      background: rgba(56, 189, 248, 0.45);
+      border-color: #7dd3fc;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.65);
+    }
+    .headlight-circle-btn {
+      position: fixed;
+      bottom: 24%;
+      left: 34px;
+      z-index: 35;
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.55);
+      border: 2px solid rgba(255, 255, 255, 0.45);
+      backdrop-filter: blur(5px);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.45);
+      transition: all 0.15s ease;
+    }
+    .headlight-circle-btn.on {
+      background: rgba(250, 204, 21, 0.35);
+      border-color: #fde047;
+      color: #fef08a;
+      box-shadow: 0 0 22px rgba(250, 204, 21, 0.75);
+    }
+
+    /* ================= TOP-RIGHT HUD (Opponent Selector, Gear S1..S6, Speed, N2O Bar) ================= */
+    #hud-top-right {
+      position: fixed;
+      top: 10px;
+      right: 12px;
+      z-index: 35;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    #opponent-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(10, 15, 28, 0.82);
+      border: 1px solid rgba(250, 204, 21, 0.55);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      backdrop-filter: blur(6px);
+    }
+    #opponent-bar select {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #38bdf8;
+      border-radius: 10px;
+      padding: 2px 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    #sound-toggle-btn {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid #38bdf8;
+      color: #38bdf8;
+      border-radius: 14px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* Reference-Matched Gear + KMH + RPM/N2O Cluster under Rearview Mirror */
+    #gear-speed-widget {
+      margin-top: 98px; /* sits right underneath the 3D rearview mirror */
+      background: linear-gradient(90deg, rgba(12, 18, 30, 0.45) 0%, rgba(12, 18, 30, 0.88) 40%, rgba(12, 18, 30, 0.92) 100%);
+      border-right: 3px solid #38bdf8;
+      padding: 6px 10px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      backdrop-filter: blur(5px);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+      pointer-events: none;
+    }
+    .rpm-segments {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 4px;
+    }
+    .rpm-seg {
+      width: 9px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.18);
+      border-radius: 1px;
+      transition: background 0.08s ease;
+    }
+    .rpm-seg.lit-cyan { background: #22d3ee; box-shadow: 0 0 6px #22d3ee; }
+    .rpm-seg.lit-amber { background: #facc15; box-shadow: 0 0 6px #facc15; }
+    .rpm-seg.lit-red { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+    .gear-kmh-line {
+      display: flex;
+      align-items: baseline;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    #gear-display {
+      font-size: 22px;
+      font-weight: 900;
+      color: #facc15;
+      font-style: italic;
+      text-shadow: 0 0 8px rgba(250, 204, 21, 0.5);
+    }
+    #kmh-display {
+      font-size: 22px;
+      font-weight: 900;
+      font-family: 'Courier New', monospace;
+      color: #ffffff;
+      letter-spacing: 1px;
+    }
+    .kmh-unit {
+      font-size: 11px;
+      font-weight: 800;
+      color: #facc15;
+    }
+    .n2o-mini-tank {
+      width: 24px;
+      height: 40px;
+      border: 1.5px solid #94a3b8;
+      border-radius: 5px;
+      background: rgba(15, 23, 42, 0.9);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #n2o-tank-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 100%;
+      background: linear-gradient(to top, #0284c7, #38bdf8);
+      transition: height 0.1s linear;
+    }
+    .n2o-mini-tank span {
+      position: relative;
+      z-index: 2;
+      font-size: 8px;
+      font-weight: 900;
+      color: #ffffff;
+      text-shadow: 0 1px 2px #000;
+    }
+
+    /* ================= REFERENCE-STYLE N2O BOOST BUTTON (Right Side) ================= */
+    #n2o-boost-btn {
+      position: fixed;
+      right: 14px;
+      bottom: 24%;
+      z-index: 35;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 58, 138, 0.92));
+      border: 2px solid #38bdf8;
+      border-radius: 10px;
+      padding: 7px 12px;
+      color: #ffffff;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(2, 132, 199, 0.45);
+      transition: transform 0.1s ease, box-shadow 0.15s ease;
+    }
+    #n2o-boost-btn:active, #n2o-boost-btn.boosting {
+      transform: scale(0.95);
+      border-color: #7dd3fc;
+      box-shadow: 0 0 28px rgba(56, 189, 248, 0.95);
+      background: linear-gradient(135deg, #0369a1, #0284c7);
+    }
+    .n2o-btn-text {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1.1;
+    }
+    .n2o-btn-text strong {
+      font-size: 12px;
+      letter-spacing: 0.6px;
+      color: #ffffff;
+    }
+    .n2o-btn-text span {
+      font-size: 11px;
+      color: #38bdf8;
+      font-weight: 800;
+    }
+
+    /* ================= RACE STATUS BANNER ================= */
+    #race-banner {
+      position: fixed;
+      top: 16%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 32;
+      background: rgba(9, 14, 26, 0.84);
+      border: 1.5px solid #facc15;
+      color: #fef08a;
+      padding: 7px 18px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+      pointer-events: none;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+      transition: opacity 0.25s ease;
+    }
+
+    /* ================= BOTTOM TOUCH / ARCADE CONTROLS ================= */
+    #touch-controls {
+      position: fixed;
+      bottom: 14px;
+      left: 14px;
+      right: 14px;
+      z-index: 35;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      pointer-events: none;
+    }
+    .touch-cluster {
+      display: flex;
+      gap: 10px;
+      pointer-events: auto;
+    }
+    .drive-pad-btn {
+      width: 62px;
+      height: 54px;
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.68);
+      border: 2px solid rgba(148, 163, 184, 0.55);
+      backdrop-filter: blur(6px);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 800;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+    }
+    .drive-pad-btn.pressed, .drive-pad-btn:active {
+      background: rgba(56, 189, 248, 0.45);
+      border-color: #38bdf8;
+      transform: scale(0.94);
+    }
+    .drive-pad-btn.brake-btn.pressed, .drive-pad-btn.brake-btn:active {
+      background: rgba(239, 68, 68, 0.5);
+      border-color: #f87171;
+    }
+    .drive-pad-btn.gas-btn.pressed, .drive-pad-btn.gas-btn:active {
+      background: rgba(34, 197, 94, 0.5);
+      border-color: #4ade80;
+    }
+
+    /* ================= START / PAUSE / FINISH MODAL OVERLAY ================= */
+    #overlay-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      background: rgba(5, 10, 20, 0.82);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    #overlay-modal.hidden {
+      display: none;
+    }
+    .modal-card {
+      background: linear-gradient(160deg, #0f172a 0%, #1e293b 100%);
+      border: 2px solid #38bdf8;
+      border-radius: 20px;
+      max-width: 520px;
+      width: 100%;
+      padding: 22px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75);
+      text-align: center;
+    }
+    .modal-title {
+      font-size: 22px;
+      font-weight: 900;
+      color: #38bdf8;
+      margin: 0 0 6px;
+      letter-spacing: 0.6px;
+    }
+    .modal-subtitle {
+      font-size: 13px;
+      color: #cbd5e1;
+      margin: 0 0 14px;
+    }
+    .dev-credit-box {
+      background: rgba(2, 6, 23, 0.75);
+      border: 1px solid rgba(250, 204, 21, 0.45);
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-bottom: 14px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #f8fafc;
+    }
+    .dev-credit-box strong {
+      color: #facc15;
+    }
+    .modal-controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      text-align: left;
+      background: rgba(15, 23, 42, 0.7);
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 11px;
+      color: #cbd5e1;
+      margin-bottom: 16px;
+    }
+    .primary-action-btn {
+      width: 100%;
+      padding: 13px 18px;
+      border-radius: 14px;
+      border: none;
+      background: linear-gradient(90deg, #00209F 0%, #D21034 100%);
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(210, 16, 52, 0.45);
+      transition: transform 0.12s ease;
+    }
+    .primary-action-btn:hover {
+      transform: translateY(-1px);
+    }
+    .secondary-action-btn {
+      margin-top: 8px;
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid #475569;
+      background: #1e293b;
+      color: #e2e8f0;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    @media (max-width: 640px) {
+      #haiti-crew-badge { max-width: 195px; padding: 4px 8px; }
+      .crew-names { font-size: 8.5px; }
+      #gear-speed-widget { margin-top: 76px; padding: 4px 8px; }
+      #gear-display, #kmh-display { font-size: 18px; }
+      .glass-icon-btn { width: 42px; height: 42px; }
+      .drive-pad-btn { width: 54px; height: 48px; font-size: 11px; }
+      #n2o-boost-btn { bottom: 22%; padding: 6px 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="game-canvas-container"></div>
+  <div id="nitro-vignette"></div>
+
+  <!-- TOP-LEFT HUD: Trophy Score, Distance KM, Haiti Flag & Deslandes Crew -->
+  <div id="hud-top-left">
+    <div class="hud-stat-row">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff">
+        <path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/>
+      </svg>
+      <span id="score-val">0</span>
+    </div>
+    <div class="hud-stat-row distance-row">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="#e2e8f0">
+        <path d="M18.92 2.01C18.72 1.42 18.16 1 17.5 1h-11c-.66 0-1.21.42-1.42 1.01L3 8v12c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1V8l-2.08-5.99zM11 4h2v3h-2V4zm0 5h2v3h-2V9zm0 5h2v3h-2v-3z"/>
+      </svg>
+      <span id="dist-val">00.00</span>
+      <span class="dist-unit">KM</span>
+    </div>
+    <div id="haiti-crew-badge">
+      <div class="haiti-flag-header">
+        <div class="haiti-flag-icon"></div>
+        <span>🇭🇹 HAITI BUS TEAM</span>
+      </div>
+      <div class="crew-names">
+        🚌 <strong>Gesner Deslandes</strong> · Software Developer<br />
+        👨‍🔧 Gesner Junior · Roosevelt · Sebastien Stephane · Zendaya Christelle Deslandes
+      </div>
+    </div>
+  </div>
+
+  <!-- LEFT FLOATING CONTROLS: Pause & Camera Switch -->
+  <div id="hud-left-controls">
+    <div class="hud-left-row">
+      <button id="pause-btn" class="glass-icon-btn" title="Pause / Resume">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+          <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+        </svg>
+      </button>
+      <button id="camera-btn" class="glass-icon-btn active" title="Toggle Cockpit / Chase View (C)">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- HEADLIGHT TOGGLE BUTTON -->
+  <button id="headlight-btn" class="headlight-circle-btn" title="Toggle High-Beam Headlights (H)">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+      <path d="M14 5c3.5 0 6 3.1 6 7s-2.5 7-6 7h-2V5h2z" fill="rgba(255,255,255,0.2)"/>
+      <line x1="3" y1="7" x2="9" y2="7" />
+      <line x1="2" y1="10.5" x2="9" y2="10.5" />
+      <line x1="2" y1="14" x2="9" y2="14" />
+      <line x1="3" y1="17.5" x2="9" y2="17.5" />
+    </svg>
+  </button>
+
+  <!-- TOP-RIGHT HUD: Opponent Flag Selector + Gear/Speed/N2O Cluster -->
+  <div id="hud-top-right">
+    <div id="opponent-bar">
+      <span>🏁 VS:</span>
+      <select id="opponent-select" aria-label="Select Opponent Country">
+        <option value="dominican">🇩🇴 Dominican Rep.</option>
+        <option value="usa">🇺🇸 United States</option>
+        <option value="france">🇫🇷 France</option>
+        <option value="brazil">🇧🇷 Brazil</option>
+      </select>
+      <button id="sound-toggle-btn" title="Mute / Unmute Sound">🔊 ON</button>
+    </div>
+
+    <div id="gear-speed-widget">
+      <div>
+        <div class="rpm-segments" id="rpm-segments">
+          <div class="rpm-seg"></div><div class="rpm-seg"></div><div class="rpm-seg"></div>
+          <div class="rpm-seg"></div><div class="rpm-seg"></div><div class="rpm-seg"></div>
+          <div class="rpm-seg"></div><div class="rpm-seg"></div><div class="rpm-seg"></div>
+          <div class="rpm-seg"></div>
+        </div>
+        <div class="gear-kmh-line">
+          <span id="gear-display">S1</span>
+          <span id="kmh-display">000</span>
+          <span class="kmh-unit">KMH</span>
+        </div>
+      </div>
+      <div class="n2o-mini-tank" title="Nitrous Oxide Level">
+        <div id="n2o-tank-fill"></div>
+        <span>N₂O</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT SIDE N2O NITROUS BOOST BUTTON -->
+  <button id="n2o-boost-btn" title="Activate N2O Nitrous Boost (Shift / Space)">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2">
+      <rect x="3" y="4" width="18" height="16" rx="2"/>
+      <line x1="7" y1="4" x2="7" y2="20"/>
+      <line x1="17" y1="4" x2="17" y2="20"/>
+      <polygon points="10,9 15,12 10,15" fill="#38bdf8"/>
+    </svg>
+    <div class="n2o-btn-text">
+      <strong>N2O BOOST</strong>
+      <span>▶▶▶</span>
+    </div>
+    <svg width="22" height="28" viewBox="0 0 24 30" fill="none">
+      <rect x="9" y="1" width="6" height="4" rx="1" fill="#94a3b8"/>
+      <rect x="6" y="5" width="12" height="23" rx="4" fill="#0284c7" stroke="#e2e8f0" stroke-width="1.5"/>
+      <text x="12" y="19" text-anchor="middle" fill="#ffffff" font-size="6.5" font-weight="bold">N₂O</text>
+    </svg>
+  </button>
+
+  <!-- RACE BANNER -->
+  <div id="race-banner">🌉 SUSPENSION BRIDGE HIGHWAY · READY TO RACE</div>
+
+  <!-- BOTTOM TOUCH / DRIVING CONTROLS -->
+  <div id="touch-controls">
+    <div class="touch-cluster">
+      <button id="btn-left" class="drive-pad-btn" aria-label="Steer Left">◀ LEFT</button>
+      <button id="btn-right" class="drive-pad-btn" aria-label="Steer Right">RIGHT ▶</button>
+    </div>
+    <div class="touch-cluster">
+      <button id="btn-brake" class="drive-pad-btn brake-btn" aria-label="Brake or Reverse">▼ BRAKE</button>
+      <button id="btn-gas" class="drive-pad-btn gas-btn" aria-label="Accelerate">▲ GAS</button>
+    </div>
+  </div>
+
+  <!-- START / PAUSE / FINISH MODAL -->
+  <div id="overlay-modal">
+    <div class="modal-card">
+      <h1 class="modal-title" id="modal-heading">🇭🇹 RACE: HAITI BUS VS WORLD</h1>
+      <p class="modal-subtitle" id="modal-sub">First-Person Cockpit &amp; Golden-Red Suspension Bridge Edition</p>
+      <div class="dev-credit-box">
+        <strong>Built by Gesner Deslandes</strong> · Software Developer<br />
+        📞 Contact Info: <strong>(509)-47385663</strong> · ✉️ Email: <strong>deslandes78@gmail.com</strong><br />
+        Team: Gesner Junior · Roosevelt · Sebastien Stephane · Zendaya Christelle Deslandes
+      </div>
+      <div class="modal-controls-grid">
+        <div><strong>[W / ↑]</strong> Accelerate</div>
+        <div><strong>[S / ↓]</strong> Brake / Reverse</div>
+        <div><strong>[A / D / ← / →]</strong> Steer Wheel</div>
+        <div><strong>[SHIFT / SPACE]</strong> N2O Nitrous</div>
+        <div><strong>[C]</strong> Cockpit / Chase View</div>
+        <div><strong>[H]</strong> High-Beam Headlights</div>
+      </div>
+      <button id="modal-start-btn" class="primary-action-btn">🚦 START BRIDGE RACE</button>
+      <button id="modal-reset-btn" class="secondary-action-btn" style="display:none;">🔄 RESTART RACE</button>
+    </div>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.128.0/build/three.module.js"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+
+    /* =========================================================================
+       1. MULTI-HARMONIC WEB AUDIO ENGINE (Realistic Gears, N2O, Screech, Fanfare)
+       ========================================================================= */
+    class BridgeRaceAudio {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+        this.initialized = false;
+        this.masterGain = null;
+        this.osc1 = null;
+        this.osc2 = null;
+        this.subOsc = null;
+        this.engineFilter = null;
+        this.engineGain = null;
+        this.nitroGain = null;
+        this.screechGain = null;
+      }
+
+      init() {
+        if (this.initialized) {
+          if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+          return;
+        }
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        this.ctx = new AudioCtx();
+
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.value = this.muted ? 0 : 0.42;
+        this.masterGain.connect(this.ctx.destination);
+
+        // Multi-oscillator diesel/turbo engine synthesizer
+        this.engineFilter = this.ctx.createBiquadFilter();
+        this.engineFilter.type = 'lowpass';
+        this.engineFilter.frequency.value = 180;
+        this.engineFilter.Q.value = 3.2;
+
+        this.engineGain = this.ctx.createGain();
+        this.engineGain.gain.value = 0.0;
+
+        this.osc1 = this.ctx.createOscillator();
+        this.osc1.type = 'sawtooth';
+        this.osc1.frequency.value = 48;
+
+        this.osc2 = this.ctx.createOscillator();
+        this.osc2.type = 'triangle';
+        this.osc2.frequency.value = 96;
+
+        this.subOsc = this.ctx.createOscillator();
+        this.subOsc.type = 'sine';
+        this.subOsc.frequency.value = 24;
+
+        this.osc1.connect(this.engineFilter);
+        this.osc2.connect(this.engineFilter);
+        this.subOsc.connect(this.engineFilter);
+        this.engineFilter.connect(this.engineGain);
+        this.engineGain.connect(this.masterGain);
+
+        this.osc1.start();
+        this.osc2.start();
+        this.subOsc.start();
+
+        // Continuous filtered noise buffer for N2O turbo hiss & tire screech
+        const bufferSize = this.ctx.sampleRate * 2;
+        const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+        // N2O Nitrous Turbo Channel
+        const nitroNoise = this.ctx.createBufferSource();
+        nitroNoise.buffer = noiseBuffer;
+        nitroNoise.loop = true;
+        const nitroFilter = this.ctx.createBiquadFilter();
+        nitroFilter.type = 'bandpass';
+        nitroFilter.frequency.value = 2400;
+        nitroFilter.Q.value = 1.8;
+        this.nitroGain = this.ctx.createGain();
+        this.nitroGain.gain.value = 0;
+        nitroNoise.connect(nitroFilter);
+        nitroFilter.connect(this.nitroGain);
+        this.nitroGain.connect(this.masterGain);
+        nitroNoise.start();
+
+        // Tire Screech Channel
+        const screechNoise = this.ctx.createBufferSource();
+        screechNoise.buffer = noiseBuffer;
+        screechNoise.loop = true;
+        const screechFilter = this.ctx.createBiquadFilter();
+        screechFilter.type = 'bandpass';
+        screechFilter.frequency.value = 1350;
+        screechFilter.Q.value = 9.0;
+        this.screechGain = this.ctx.createGain();
+        this.screechGain.gain.value = 0;
+        screechNoise.connect(screechFilter);
+        screechFilter.connect(this.screechGain);
+        this.screechGain.connect(this.masterGain);
+        screechNoise.start();
+
+        this.initialized = true;
+      }
+
+      setMuted(mute) {
+        this.muted = mute;
+        if (this.masterGain && this.ctx) {
+          this.masterGain.gain.setTargetAtTime(mute ? 0 : 0.42, this.ctx.currentTime, 0.04);
+        }
+      }
+
+      update(speedKmh, rpmRatio, isBoosting, isScreeching, active) {
+        if (!this.initialized || !this.ctx) return;
+        if (this.ctx.state === 'suspended' && !this.muted) this.ctx.resume();
+        const now = this.ctx.currentTime;
+
+        if (!active) {
+          this.engineGain.gain.setTargetAtTime(0.03, now, 0.1);
+          this.nitroGain.gain.setTargetAtTime(0, now, 0.08);
+          this.screechGain.gain.setTargetAtTime(0, now, 0.08);
+          return;
+        }
+
+        const baseFreq = 38 + rpmRatio * 95 + (isBoosting ? 24 : 0);
+        this.osc1.frequency.setTargetAtTime(baseFreq, now, 0.05);
+        this.osc2.frequency.setTargetAtTime(baseFreq * 1.98, now, 0.05);
+        this.subOsc.frequency.setTargetAtTime(baseFreq * 0.5, now, 0.05);
+
+        const cutoff = 160 + rpmRatio * 680 + (isBoosting ? 420 : 0);
+        this.engineFilter.frequency.setTargetAtTime(cutoff, now, 0.06);
+
+        const vol = 0.14 + Math.min(0.24, (speedKmh / 220) * 0.22);
+        this.engineGain.gain.setTargetAtTime(vol, now, 0.06);
+
+        this.nitroGain.gain.setTargetAtTime(isBoosting ? 0.24 : 0, now, 0.05);
+        this.screechGain.gain.setTargetAtTime(isScreeching ? 0.14 : 0, now, 0.05);
+      }
+
+      playGearShift() {
+        if (!this.initialized || this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(190, now);
+        osc.frequency.exponentialRampToValueAtTime(95, now + 0.09);
+        g.gain.setValueAtTime(0.18, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+        osc.connect(g);
+        g.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + 0.1);
+      }
+
+      playNearMiss() {
+        if (!this.initialized || this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.16);
+        g.gain.setValueAtTime(0.2, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+        osc.connect(g);
+        g.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + 0.18);
+      }
+
+      playImpact() {
+        if (!this.initialized || this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(130, now);
+        osc.frequency.exponentialRampToValueAtTime(28, now + 0.35);
+        g.gain.setValueAtTime(0.45, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
+        osc.connect(g);
+        g.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + 0.36);
+      }
+
+      playFanfare() {
+        if (!this.initialized || this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const notes = [261.63, 329.63, 392.00, 523.25, 659.25];
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const g = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.value = freq;
+          g.gain.setValueAtTime(0.26, now + idx * 0.18);
+          g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.18 + 0.45);
+          osc.connect(g);
+          g.connect(this.masterGain);
+          osc.start(now + idx * 0.18);
+          osc.stop(now + idx * 0.18 + 0.46);
+        });
+      }
+    }
+
+    const audio = new BridgeRaceAudio();
+
+    /* =========================================================================
+       2. THREE.JS SCENE, SKY, OCEAN & GOLDEN-RED SUSPENSION BRIDGE
+       ========================================================================= */
+    const container = document.getElementById('game-canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x56a8f5);
+    scene.fog = new THREE.FogExp2(0x7cc0fa, 0.0022);
+
+    const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.08, 1200);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
+
+    // Lighting
+    const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x334155, 1.05);
+    scene.add(hemiLight);
+
+    const sunLight = new THREE.DirectionalLight(0xfffbeb, 1.35);
+    sunLight.position.set(-45, 95, 140);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 1024;
+    sunLight.shadow.mapSize.height = 1024;
+    scene.add(sunLight);
+
+    // Glowing Sun Sphere & Clouds in Sky
+    const sunDisc = new THREE.Mesh(
+      new THREE.CircleGeometry(18, 24),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false })
+    );
+    sunDisc.position.set(-55, 115, 480);
+    scene.add(sunDisc);
+
+    const sunHalo = new THREE.Mesh(
+      new THREE.CircleGeometry(38, 24),
+      new THREE.MeshBasicMaterial({ color: 0xbae6fd, transparent: true, opacity: 0.42, fog: false })
+    );
+    sunHalo.position.set(-55, 115, 481);
+    scene.add(sunHalo);
+
+    const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.88, fog: false });
+    for (let i = 0; i < 28; i++) {
+      const cloudGroup = new THREE.Group();
+      for (let p = 0; p < 4; p++) {
+        const puff = new THREE.Mesh(new THREE.SphereGeometry(7 + Math.random() * 6, 10, 8), cloudMat);
+        puff.scale.set(1.5, 0.55, 1.0);
+        puff.position.set((p - 1.5) * 8, (Math.random() - 0.5) * 2.5, (Math.random() - 0.5) * 4);
+        cloudGroup.add(puff);
+      }
+      cloudGroup.position.set((Math.random() - 0.5) * 420, 62 + Math.random() * 48, 80 + i * 32);
+      scene.add(cloudGroup);
+    }
+
+    // Ocean Water beneath the Bridge
+    const oceanMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(2400, 2400),
+      new THREE.MeshPhongMaterial({ color: 0x1d6fa5, shininess: 65 })
+    );
+    oceanMesh.rotation.x = -Math.PI / 2;
+    oceanMesh.position.set(0, -14, 500);
+    scene.add(oceanMesh);
+
+    // Highway & Suspension Bridge Constants
+    const ROAD_WIDTH = 13.6;
+    const LANE_CENTERS = [-4.6, -1.55, 1.55, 4.6];
+    const LANE_LIMIT = 5.6;
+    const FINISH_Z = 950;
+
+    // Asphalt Deck
+    const roadLen = FINISH_Z + 180;
+    const roadMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(ROAD_WIDTH + 1.6, 0.8, roadLen),
+      new THREE.MeshStandardMaterial({ color: 0x3b4048, roughness: 0.82 })
+    );
+    roadMesh.position.set(0, -0.4, roadLen / 2 - 40);
+    roadMesh.receiveShadow = true;
+    scene.add(roadMesh);
+
+    // Double Solid Center White/Yellow Lines (Matching Reference Image)
+    const centerStripeMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
+    [-0.14, 0.14].forEach((offsetX) => {
+      const solidLine = new THREE.Mesh(new THREE.PlaneGeometry(0.12, roadLen), centerStripeMat);
+      solidLine.rotation.x = -Math.PI / 2;
+      solidLine.position.set(offsetX, 0.015, roadLen / 2 - 40);
+      scene.add(solidLine);
+    });
+
+    // Edge Solid Lines & Dashed Lane Dividers
+    [-ROAD_WIDTH / 2 + 0.35, ROAD_WIDTH / 2 - 0.35].forEach((edgeX) => {
+      const edgeLine = new THREE.Mesh(new THREE.PlaneGeometry(0.16, roadLen), centerStripeMat);
+      edgeLine.rotation.x = -Math.PI / 2;
+      edgeLine.position.set(edgeX, 0.015, roadLen / 2 - 40);
+      scene.add(edgeLine);
+    });
+
+    const dashGeo = new THREE.PlaneGeometry(0.14, 3.2);
+    for (let z = -20; z < FINISH_Z + 120; z += 8) {
+      [-3.1, 3.1].forEach((laneDividerX) => {
+        const dash = new THREE.Mesh(dashGeo, centerStripeMat);
+        dash.rotation.x = -Math.PI / 2;
+        dash.position.set(laneDividerX, 0.015, z);
+        scene.add(dash);
+      });
+    }
+
+    // Metallic Guardrails, Yellow Safety Railings & Streetlight Poles
+    const guardrailMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.65, roughness: 0.35 });
+    const yellowRailMat = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.45 });
+    const poleMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.6 });
+    const lampBulbMat = new THREE.MeshBasicMaterial({ color: 0xfef9c3 });
+
+    [-1, 1].forEach((side) => {
+      const railX = side * (ROAD_WIDTH / 2 + 0.15);
+      const railBeam = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.42, roadLen), guardrailMat);
+      railBeam.position.set(railX, 0.55, roadLen / 2 - 40);
+      scene.add(railBeam);
+
+      const yellowTop = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.25, roadLen), yellowRailMat);
+      yellowTop.position.set(side * (ROAD_WIDTH / 2 + 0.55), 1.35, roadLen / 2 - 40);
+      scene.add(yellowTop);
+
+      for (let z = 10; z < FINISH_Z + 100; z += 36) {
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.14, 6.2, 8), poleMat);
+        pole.position.set(side * (ROAD_WIDTH / 2 + 0.55), 3.1, z);
+        scene.add(pole);
+
+        const arm = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.1, 0.1), poleMat);
+        arm.position.set(side * (ROAD_WIDTH / 2 - 0.25), 6.1, z);
+        scene.add(arm);
+
+        const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.12, 0.25), lampBulbMat);
+        lamp.position.set(side * (ROAD_WIDTH / 2 - 0.9), 6.02, z);
+        scene.add(lamp);
+      }
+    });
+
+    // Golden-Red Suspension Bridge Towers & Sweeping Red Main Cables
+    const bridgeRedMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.38, metalness: 0.25 });
+    const towerZs = [160, 440, 720];
+
+    towerZs.forEach((tz) => {
+      const towerGroup = new THREE.Group();
+      [-1, 1].forEach((side) => {
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(1.5, 48, 1.8), bridgeRedMat);
+        leg.position.set(side * (ROAD_WIDTH / 2 + 0.95), 14, tz);
+        leg.castShadow = true;
+        towerGroup.add(leg);
+      });
+      // Horizontal Cross-Braces overhead (Golden Gate / San Francisco style)
+      [14, 23, 32, 37].forEach((braceY) => {
+        const brace = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH + 3.4, 1.35, 1.4), bridgeRedMat);
+        brace.position.set(0, braceY, tz);
+        towerGroup.add(brace);
+      });
+      scene.add(towerGroup);
+    });
+
+    // Sweeping Catenary Red Main Suspension Cables + Vertical Suspender Ropes
+    function getCableHeight(z) {
+      // Parabolic catenary between towers at 160, 440, 720
+      let minDist = Infinity;
+      towerZs.forEach((tz) => {
+        const d = Math.abs(z - tz);
+        if (d < minDist) minDist = d;
+      });
+      const norm = Math.min(1, minDist / 140);
+      return 37.5 - (1 - Math.pow(1 - norm, 2)) * 31.5;
+    }
+
+    const suspenderMat = new THREE.MeshBasicMaterial({ color: 0x991b1b });
+    for (let z = 20; z <= 860; z += 10) {
+      const y1 = getCableHeight(z);
+      const y2 = getCableHeight(z + 10);
+      const midY = (y1 + y2) / 2;
+      const dy = y2 - y1;
+      const segLen = Math.hypot(10, dy);
+      const angleX = -Math.atan2(dy, 10);
+
+      [-1, 1].forEach((side) => {
+        const cableX = side * (ROAD_WIDTH / 2 + 0.95);
+        const mainSeg = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, segLen + 0.3, 8), bridgeRedMat);
+        mainSeg.rotation.x = Math.PI / 2 + angleX;
+        mainSeg.position.set(cableX, midY, z + 5);
+        scene.add(mainSeg);
+
+        // Vertical suspender cable down to deck
+        if (y1 > 2.2) {
+          const vRope = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, y1 - 1.2, 6), suspenderMat);
+          vRope.position.set(cableX, (y1 + 1.2) / 2, z);
+          scene.add(vRope);
+        }
+      });
+    }
+
+    // Checkered Finish Line Arch at Z = FINISH_Z
+    const finishGroup = new THREE.Group();
+    for (let i = -6; i <= 6; i++) {
+      const tile = new THREE.Mesh(
+        new THREE.BoxGeometry(1.0, 0.06, 1.4),
+        new THREE.MeshBasicMaterial({ color: i % 2 === 0 ? 0xffffff : 0x111827 })
+      );
+      tile.position.set(i * 1.0, 0.03, FINISH_Z);
+      finishGroup.add(tile);
+    }
+    const archBanner = new THREE.Mesh(
+      new THREE.BoxGeometry(ROAD_WIDTH + 2, 1.6, 0.6),
+      new THREE.MeshStandardMaterial({ color: 0x00209F })
+    );
+    archBanner.position.set(0, 8.2, FINISH_Z);
+    finishGroup.add(archBanner);
+    scene.add(finishGroup);
+
+    /* =========================================================================
+       3. PLAYER HAITI BUS & HIGH-DETAIL FIRST-PERSON COCKPIT + LIVE MIRRORS
+       ========================================================================= */
+    const playerBus = new THREE.Group();
+
+    // Exterior Haiti Bus Body (visible in Chase Camera & Rearview Reflection)
+    const busBody = new THREE.Mesh(
+      new THREE.BoxGeometry(2.35, 1.95, 5.4),
+      new THREE.MeshStandardMaterial({ color: 0x00209F, roughness: 0.35 })
+    );
+    busBody.position.set(0, 1.25, 0);
+    busBody.castShadow = true;
+    playerBus.add(busBody);
+
+    const busRedStripe = new THREE.Mesh(
+      new THREE.BoxGeometry(2.4, 0.65, 5.45),
+      new THREE.MeshStandardMaterial({ color: 0xD21034, roughness: 0.4 })
+    );
+    busRedStripe.position.set(0, 0.75, 0);
+    playerBus.add(busRedStripe);
+
+    const wheelGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.35, 16);
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111827 });
+    [[-1.15, 0.45, 1.7], [1.15, 0.45, 1.7], [-1.15, 0.45, -1.7], [1.15, 0.45, -1.7]].forEach(([wx, wy, wz]) => {
+      const w = new THREE.Mesh(wheelGeo, wheelMat);
+      w.rotation.z = Math.PI / 2;
+      w.position.set(wx, wy, wz);
+      playerBus.add(w);
+    });
+
+    // Headlight Spotlights
+    const leftHeadlight = new THREE.SpotLight(0xfef9c3, 0, 95, Math.PI / 5, 0.45, 1);
+    leftHeadlight.position.set(-0.85, 0.9, 2.7);
+    leftHeadlight.target.position.set(-0.85, 0.1, 32);
+    playerBus.add(leftHeadlight, leftHeadlight.target);
+
+    const rightHeadlight = new THREE.SpotLight(0xfef9c3, 0, 95, Math.PI / 5, 0.45, 1);
+    rightHeadlight.position.set(0.85, 0.9, 2.7);
+    rightHeadlight.target.position.set(0.85, 0.1, 32);
+    playerBus.add(rightHeadlight, rightHeadlight.target);
+
+    scene.add(playerBus);
+
+    // --- FIRST-PERSON COCKPIT GROUP (Attached to Camera in Cockpit Mode) ---
+    const cockpitGroup = new THREE.Group();
+
+    // Dynamic Canvas Textures for Speedometer, Dual Dash Gauges, Left Mirror & Rearview Mirror
+    const speedoCanvas = document.createElement('canvas');
+    speedoCanvas.width = 256; speedoCanvas.height = 160;
+    const speedoCtx = speedoCanvas.getContext('2d');
+    const speedoTex = new THREE.CanvasTexture(speedoCanvas);
+
+    const auxGaugeCanvas = document.createElement('canvas');
+    auxGaugeCanvas.width = 128; auxGaugeCanvas.height = 128;
+    const auxGaugeCtx = auxGaugeCanvas.getContext('2d');
+    const auxGaugeTex = new THREE.CanvasTexture(auxGaugeCanvas);
+
+    const leftMirrorCanvas = document.createElement('canvas');
+    leftMirrorCanvas.width = 256; leftMirrorCanvas.height = 144;
+    const leftMirrorCtx = leftMirrorCanvas.getContext('2d');
+    const leftMirrorTex = new THREE.CanvasTexture(leftMirrorCanvas);
+
+    const rearMirrorCanvas = document.createElement('canvas');
+    rearMirrorCanvas.width = 320; rearMirrorCanvas.height = 120;
+    const rearMirrorCtx = rearMirrorCanvas.getContext('2d');
+    const rearMirrorTex = new THREE.CanvasTexture(rearMirrorCanvas);
+
+    // Dark Charcoal Dashboard Base
+    const dashMat = new THREE.MeshBasicMaterial({ color: 0x1b1f26 });
+    const dashTrimMat = new THREE.MeshBasicMaterial({ color: 0x2c333f });
+    const silverMat = new THREE.MeshBasicMaterial({ color: 0xcbd5e1 });
+    const skinMat = new THREE.MeshBasicMaterial({ color: 0xd49b72 });
+
+    const dashMain = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.46, 0.65), dashMat);
+    dashMain.position.set(0.15, -0.46, -0.78);
+    dashMain.rotation.x = 0.12;
+    cockpitGroup.add(dashMain);
+
+    // Instrument Binnacle Hood
+    const hoodMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.27, 0.35, 18, 1, false, 0, Math.PI), dashTrimMat);
+    hoodMesh.rotation.z = Math.PI / 2;
+    hoodMesh.rotation.y = Math.PI / 2;
+    hoodMesh.position.set(-0.18, -0.23, -0.68);
+    cockpitGroup.add(hoodMesh);
+
+    // Central Speedometer Cluster Screen
+    const speedoScreen = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.32, 0.2),
+      new THREE.MeshBasicMaterial({ map: speedoTex })
+    );
+    speedoScreen.position.set(-0.18, -0.24, -0.57);
+    speedoScreen.rotation.x = -0.15;
+    cockpitGroup.add(speedoScreen);
+
+    // Two Round Auxiliary Dash Gauges on Top Center Dash (Matching Reference Image)
+    [-0.02, 0.14].forEach((gx) => {
+      const pod = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.058, 0.05, 18), dashMat);
+      pod.rotation.x = Math.PI / 2;
+      pod.position.set(gx, -0.19, -0.72);
+      cockpitGroup.add(pod);
+
+      const face = new THREE.Mesh(
+        new THREE.CircleGeometry(0.05, 18),
+        new THREE.MeshBasicMaterial({ map: auxGaugeTex })
+      );
+      face.position.set(gx, -0.19, -0.693);
+      cockpitGroup.add(face);
+    });
+
+    // Center Console Radio / Navigation Display
+    const consoleScreen = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.24, 0.18),
+      new THREE.MeshBasicMaterial({ color: 0xd97706 })
+    );
+    consoleScreen.position.set(0.34, -0.36, -0.64);
+    consoleScreen.rotation.y = -0.22;
+    cockpitGroup.add(consoleScreen);
+
+    // Left A-Pillar & Roof Header Frame
+    const aPillar = new THREE.Mesh(new THREE.BoxGeometry(0.11, 1.15, 0.12), dashTrimMat);
+    aPillar.position.set(-0.78, 0.15, -0.62);
+    aPillar.rotation.z = -0.26;
+    cockpitGroup.add(aPillar);
+
+    const roofHeader = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.16, 0.25), dashTrimMat);
+    roofHeader.position.set(0.1, 0.56, -0.56);
+    cockpitGroup.add(roofHeader);
+
+    // Left Yellow Side Mirror Housing + Live Highway Reflection Glass
+    const sideMirrorHousing = new THREE.Mesh(
+      new THREE.BoxGeometry(0.34, 0.2, 0.12),
+      new THREE.MeshBasicMaterial({ color: 0xeab308 })
+    );
+    sideMirrorHousing.position.set(-0.84, -0.18, -0.58);
+    sideMirrorHousing.rotation.y = 0.24;
+    cockpitGroup.add(sideMirrorHousing);
+
+    const sideMirrorGlass = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.3, 0.165),
+      new THREE.MeshBasicMaterial({ map: leftMirrorTex })
+    );
+    sideMirrorGlass.position.set(-0.835, -0.18, -0.518);
+    sideMirrorGlass.rotation.y = 0.24;
+    cockpitGroup.add(sideMirrorGlass);
+
+    // Top-Right Rearview Mirror Housing + Live Behind-View Reflection
+    const rearMirrorHousing = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.17, 0.05), dashMat);
+    rearMirrorHousing.position.set(0.42, 0.37, -0.52);
+    rearMirrorHousing.rotation.y = -0.14;
+    cockpitGroup.add(rearMirrorHousing);
+
+    const rearMirrorGlass = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.42, 0.14),
+      new THREE.MeshBasicMaterial({ map: rearMirrorTex })
+    );
+    rearMirrorGlass.position.set(0.418, 0.37, -0.492);
+    rearMirrorGlass.rotation.y = -0.14;
+    cockpitGroup.add(rearMirrorGlass);
+
+    // Rotating Steering Wheel & Driver Hands
+    const steeringWheelGroup = new THREE.Group();
+    steeringWheelGroup.position.set(-0.18, -0.35, -0.45);
+    steeringWheelGroup.rotation.x = -0.35;
+
+    const wheelRim = new THREE.Mesh(new THREE.TorusGeometry(0.21, 0.024, 12, 32), dashMat);
+    steeringWheelGroup.add(wheelRim);
+
+    const wheelHub = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.085, 0.04, 16), dashTrimMat);
+    wheelHub.rotation.x = Math.PI / 2;
+    steeringWheelGroup.add(wheelHub);
+
+    const hubBadge = new THREE.Mesh(new THREE.CircleGeometry(0.032, 16), silverMat);
+    hubBadge.position.z = 0.022;
+    steeringWheelGroup.add(hubBadge);
+
+    // Left & Right Spokes
+    [-1, 1].forEach((s) => {
+      const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.035, 0.025), silverMat);
+      spoke.position.set(s * 0.11, -0.02, 0);
+      steeringWheelGroup.add(spoke);
+
+      // Driver Hand & Forearm gripping the wheel rim
+      const hand = new THREE.Mesh(new THREE.SphereGeometry(0.036, 12, 10), skinMat);
+      hand.scale.set(0.95, 1.25, 0.85);
+      hand.position.set(s * 0.195, 0.03, 0.015);
+      steeringWheelGroup.add(hand);
+
+      const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.044, 0.26, 10), skinMat);
+      forearm.position.set(s * 0.24, -0.1, 0.07);
+      forearm.rotation.z = s * 0.32;
+      forearm.rotation.x = 0.45;
+      steeringWheelGroup.add(forearm);
+    });
+
+    cockpitGroup.add(steeringWheelGroup);
+    camera.add(cockpitGroup);
+    scene.add(camera);
+
+    /* =========================================================================
+       4. OPPONENT WORLD RACER & HIGHWAY TRAFFIC VEHICLES
+       ========================================================================= */
+    const opponentCar = new THREE.Group();
+    const oppBodyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.35 });
+    const oppRoofMat = new THREE.MeshStandardMaterial({ color: 0xce1126, roughness: 0.35 });
+    const oppStripeMat = new THREE.MeshStandardMaterial({ color: 0x002b7f });
+
+    const oppBody = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.75, 4.1), oppBodyMat);
+    oppBody.position.y = 0.65;
+    oppBody.castShadow = true;
+    opponentCar.add(oppBody);
+
+    const oppCabin = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.55, 2.2), oppRoofMat);
+    oppCabin.position.set(0, 1.25, -0.15);
+    opponentCar.add(oppCabin);
+
+    const oppStripe = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.78, 4.14), oppStripeMat);
+    oppStripe.position.y = 0.66;
+    opponentCar.add(oppStripe);
+
+    [[-0.95, 0.38, 1.3], [0.95, 0.38, 1.3], [-0.95, 0.38, -1.3], [0.95, 0.38, -1.3]].forEach(([wx, wy, wz]) => {
+      const w = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.28, 14), wheelMat);
+      w.rotation.z = Math.PI / 2;
+      w.position.set(wx, wy, wz);
+      opponentCar.add(w);
+    });
+    scene.add(opponentCar);
+
+    const OPPONENT_THEMES = {
+      dominican: { name: '🇩🇴 Dominican Republic', body: 0xffffff, roof: 0xce1126, stripe: 0x002b7f },
+      usa:       { name: '🇺🇸 United States',      body: 0xb22234, roof: 0xffffff, stripe: 0x3c3b6e },
+      france:    { name: '🇫🇷 France',             body: 0x0055a4, roof: 0xffffff, stripe: 0xef4135 },
+      brazil:    { name: '🇧🇷 Brazil',             body: 0x009c3b, roof: 0xffdf00, stripe: 0x002776 },
+    };
+
+    function applyOpponentCountry(code) {
+      const t = OPPONENT_THEMES[code] || OPPONENT_THEMES.dominican;
+      oppBodyMat.color.setHex(t.body);
+      oppRoofMat.color.setHex(t.roof);
+      oppStripeMat.color.setHex(t.stripe);
+    }
+
+    // Highway Traffic Cars to weave past for Near-Miss Bonus Points
+    const trafficPool = [];
+    const trafficColors = [0xf8fafc, 0x94a3b8, 0xdc2626, 0x0284c7, 0xf59e0b, 0x10b981];
+    for (let i = 0; i < 14; i++) {
+      const tGroup = new THREE.Group();
+      const c = trafficColors[i % trafficColors.length];
+      const b = new THREE.Mesh(
+        new THREE.BoxGeometry(1.85, 0.85, 3.9),
+        new THREE.MeshStandardMaterial({ color: c, roughness: 0.4 })
+      );
+      b.position.y = 0.65;
+      tGroup.add(b);
+
+      const cab = new THREE.Mesh(
+        new THREE.BoxGeometry(1.5, 0.55, 2.0),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b })
+      );
+      cab.position.set(0, 1.3, -0.1);
+      tGroup.add(cab);
+
+      scene.add(tGroup);
+      trafficPool.push({
+        mesh: tGroup,
+        lane: i % 4,
+        x: LANE_CENTERS[i % 4],
+        z: 65 + i * 62,
+        speed: 14 + (i % 4) * 3.5,
+        passed: false,
+      });
+    }
+
+    /* =========================================================================
+       5. DYNAMIC CANVAS RENDERERS FOR COCKPIT GAUGES & LIVE MIRRORS
+       ========================================================================= */
+    function renderCockpitTextures(kmh, rpmRatio, steerAngle, oppRelZ, oppRelX, dashOffset) {
+      // 1. Center Speedometer Cluster
+      const sc = speedoCtx;
+      sc.fillStyle = '#090d16';
+      sc.fillRect(0, 0, 256, 160);
+
+      // White Semi-Circular Dial
+      sc.beginPath();
+      sc.arc(128, 108, 76, Math.PI, 0, false);
+      sc.fillStyle = '#f1f5f9';
+      sc.fill();
+      sc.lineWidth = 5;
+      sc.strokeStyle = '#38bdf8';
+      sc.stroke();
+
+      // Speed Ticks & Numbers
+      sc.fillStyle = '#0f172a';
+      sc.font = 'bold 11px sans-serif';
+      sc.textAlign = 'center';
+      for (let s = 0; s <= 180; s += 30) {
+        const ang = Math.PI + (s / 180) * Math.PI;
+        const tx = 128 + Math.cos(ang) * 56;
+        const ty = 108 + Math.sin(ang) * 56;
+        sc.fillText(String(s), tx, ty + 4);
+      }
+
+      // Red Needle
+      const needleAng = Math.PI + Math.min(1, kmh / 180) * Math.PI;
+      sc.beginPath();
+      sc.moveTo(128, 108);
+      sc.lineTo(128 + Math.cos(needleAng) * 66, 108 + Math.sin(needleAng) * 66);
+      sc.strokeStyle = '#ef4444';
+      sc.lineWidth = 4;
+      sc.stroke();
+
+      // Digital Trip Strip at Bottom
+      sc.fillStyle = '#1e293b';
+      sc.fillRect(62, 118, 132, 30);
+      sc.fillStyle = '#fb923c';
+      sc.font = 'bold 14px monospace';
+      sc.fillText(`${Math.round(kmh)} KMH · HAITI`, 128, 138);
+      speedoTex.needsUpdate = true;
+
+      // 2. Dual Auxiliary Dash Gauges
+      const ac = auxGaugeCtx;
+      ac.fillStyle = '#f8fafc';
+      ac.fillRect(0, 0, 128, 128);
+      ac.strokeStyle = '#ef4444';
+      ac.lineWidth = 6;
+      ac.beginPath();
+      ac.arc(64, 64, 54, 0.75 * Math.PI, 2.25 * Math.PI);
+      ac.stroke();
+
+      const auxAng = 0.75 * Math.PI + rpmRatio * 1.5 * Math.PI;
+      ac.beginPath();
+      ac.moveTo(64, 64);
+      ac.lineTo(64 + Math.cos(auxAng) * 44, 64 + Math.sin(auxAng) * 44);
+      ac.strokeStyle = '#dc2626';
+      ac.lineWidth = 4;
+      ac.stroke();
+      auxGaugeTex.needsUpdate = true;
+
+      // 3. Left Yellow Side Mirror Live Reflection (Bridge Cables, Road & Traffic Behind)
+      const lm = leftMirrorCtx;
+      lm.fillStyle = '#60a5fa';
+      lm.fillRect(0, 0, 256, 72);
+      lm.fillStyle = '#334155';
+      lm.fillRect(0, 72, 256, 72);
+
+      // Red suspension cables reflected in mirror
+      lm.strokeStyle = '#dc2626';
+      lm.lineWidth = 3;
+      lm.beginPath();
+      lm.moveTo(0, 18);
+      lm.quadraticCurveTo(128, 62, 256, 18);
+      lm.stroke();
+
+      // Perspective lanes in side mirror
+      lm.strokeStyle = '#e2e8f0';
+      lm.lineWidth = 2;
+      lm.beginPath();
+      lm.moveTo(95, 72); lm.lineTo(25, 144);
+      lm.moveTo(160, 72); lm.lineTo(230, 144);
+      lm.stroke();
+
+      // Distant reflected car silhouette
+      lm.fillStyle = '#f8fafc';
+      lm.fillRect(118 + Math.sin(dashOffset * 0.05) * 6, 82, 20, 12);
+      leftMirrorTex.needsUpdate = true;
+
+      // 4. Top-Right Rearview Mirror Live Reflection (Shows Opponent Car Behind)
+      const rm = rearMirrorCtx;
+      rm.fillStyle = '#60a5fa';
+      rm.fillRect(0, 0, 320, 56);
+      rm.fillStyle = '#334155';
+      rm.fillRect(0, 56, 320, 64);
+
+      // Bridge towers in rearview
+      rm.strokeStyle = '#dc2626';
+      rm.lineWidth = 3;
+      rm.strokeRect(110, 14, 100, 42);
+
+      // Lanes
+      rm.strokeStyle = '#f8fafc';
+      rm.lineWidth = 2;
+      rm.beginPath();
+      rm.moveTo(135, 56); rm.lineTo(65, 120);
+      rm.moveTo(185, 56); rm.lineTo(255, 120);
+      rm.stroke();
+
+      // Draw Opponent Car inside Rearview when behind player
+      if (oppRelZ < 0 && oppRelZ > -140) {
+        const scale = Math.max(0.25, 1 + oppRelZ / 140);
+        const carW = 54 * scale;
+        const carH = 26 * scale;
+        const cx = 160 - oppRelX * 12 * scale - carW / 2;
+        const cy = 62 + (1 - scale) * 26;
+        rm.fillStyle = '#ef4444';
+        rm.fillRect(cx, cy, carW, carH);
+        rm.fillStyle = '#fef08a';
+        rm.fillRect(cx + 3, cy + carH * 0.55, 6 * scale, 4 * scale);
+        rm.fillRect(cx + carW - 9 * scale, cy + carH * 0.55, 6 * scale, 4 * scale);
+      }
+      rearMirrorTex.needsUpdate = true;
+    }
+
+    /* =========================================================================
+       6. GAME STATE, PHYSICS, AUTOMATIC GEARS (S1..S6) & CONTROLS
+       ========================================================================= */
+    const state = {
+      running: false,
+      paused: false,
+      finished: false,
+      cockpitView: true,
+      headlightsOn: false,
+      playerZ: 0,
+      playerX: -1.55,
+      speed: 0, // m/s
+      steerAngle: 0,
+      nitro: 100,
+      boosting: false,
+      gear: 1,
+      score: 0,
+      oppZ: 0,
+      oppX: 1.55,
+      oppSpeed: 28,
+      oppCountry: 'dominican',
+    };
+
+    const keys = { up: false, down: false, left: false, right: false, boost: false };
+
+    // DOM Elements
+    const scoreValEl = document.getElementById('score-val');
+    const distValEl = document.getElementById('dist-val');
+    const gearDisplayEl = document.getElementById('gear-display');
+    const kmhDisplayEl = document.getElementById('kmh-display');
+    const n2oFillEl = document.getElementById('n2o-tank-fill');
+    const rpmSegEls = Array.from(document.querySelectorAll('.rpm-seg'));
+    const raceBannerEl = document.getElementById('race-banner');
+    const nitroVignetteEl = document.getElementById('nitro-vignette');
+    const overlayModalEl = document.getElementById('overlay-modal');
+    const modalHeadingEl = document.getElementById('modal-heading');
+    const modalSubEl = document.getElementById('modal-sub');
+    const modalStartBtn = document.getElementById('modal-start-btn');
+    const modalResetBtn = document.getElementById('modal-reset-btn');
+    const pauseBtn = document.getElementById('pause-btn');
+    const cameraBtn = document.getElementById('camera-btn');
+    const headlightBtn = document.getElementById('headlight-btn');
+    const n2oBoostBtn = document.getElementById('n2o-boost-btn');
+    const opponentSelectEl = document.getElementById('opponent-select');
+    const soundToggleBtn = document.getElementById('sound-toggle-btn');
+
+    function setBanner(text) {
+      raceBannerEl.textContent = text;
+    }
+
+    function toggleCameraMode() {
+      state.cockpitView = !state.cockpitView;
+      cockpitGroup.visible = state.cockpitView;
+      playerBus.visible = !state.cockpitView;
+      cameraBtn.classList.toggle('active', state.cockpitView);
+      setBanner(state.cockpitView ? '🎥 FIRST-PERSON COCKPIT VIEW' : '🚌 EXTERNAL CHASE VIEW');
+    }
+
+    function toggleHeadlights() {
+      state.headlightsOn = !state.headlightsOn;
+      const intensity = state.headlightsOn ? 3.2 : 0;
+      leftHeadlight.intensity = intensity;
+      rightHeadlight.intensity = intensity;
+      headlightBtn.classList.toggle('on', state.headlightsOn);
+      setBanner(state.headlightsOn ? '💡 HIGH-BEAM HEADLIGHTS ON' : '💡 HEADLIGHTS OFF');
+    }
+
+    function resetGame() {
+      state.playerZ = 0;
+      state.playerX = -1.55;
+      state.speed = 0;
+      state.steerAngle = 0;
+      state.nitro = 100;
+      state.boosting = false;
+      state.gear = 1;
+      state.score = 0;
+      state.oppZ = 0;
+      state.oppX = 1.55;
+      state.oppSpeed = 29;
+      state.finished = false;
+      state.paused = false;
+
+      trafficPool.forEach((t, idx) => {
+        t.lane = idx % 4;
+        t.x = LANE_CENTERS[t.lane];
+        t.z = 65 + idx * 62;
+        t.passed = false;
+        t.mesh.position.set(t.x, 0, t.z);
+      });
+
+      scoreValEl.textContent = '0';
+      distValEl.textContent = '00.00';
+      gearDisplayEl.textContent = 'S1';
+      kmhDisplayEl.textContent = '000';
+      n2oFillEl.style.height = '100%';
+      cockpitGroup.visible = state.cockpitView;
+      playerBus.visible = !state.cockpitView;
+    }
+
+    function startRace() {
+      audio.init();
+      resetGame();
+      state.running = true;
+      overlayModalEl.classList.add('hidden');
+      const oppName = OPPONENT_THEMES[state.oppCountry].name;
+      setBanner(`🏁 GO! HAITI BUS VS ${oppName.toUpperCase()} — 0.95 KM BRIDGE SPRINT!`);
+    }
+
+    function togglePause() {
+      if (!state.running || state.finished) return;
+      state.paused = !state.paused;
+      if (state.paused) {
+        modalHeadingEl.textContent = '⏸️ RACE PAUSED';
+        modalSubEl.textContent = 'Take a breather on the Suspension Bridge Highway';
+        modalStartBtn.textContent = '▶️ RESUME RACE';
+        modalResetBtn.style.display = 'block';
+        overlayModalEl.classList.remove('hidden');
+      } else {
+        overlayModalEl.classList.add('hidden');
+      }
+    }
+
+    function finishRace(playerWon) {
+      state.finished = true;
+      state.running = false;
+      audio.playFanfare();
+      const oppName = OPPONENT_THEMES[state.oppCountry].name;
+      modalHeadingEl.textContent = playerWon ? '🏆 HAITI BUS WINS THE BRIDGE RACE!' : `🏁 ${oppName.toUpperCase()} FINISHED FIRST!`;
+      modalSubEl.textContent = `Final Score: ${state.score} pts · Distance: ${(state.playerZ / 1000).toFixed(2)} KM`;
+      modalStartBtn.textContent = '🚦 RACE AGAIN';
+      modalResetBtn.style.display = 'none';
+      overlayModalEl.classList.remove('hidden');
+      setBanner(playerWon ? '🎉 VICTORY FOR HAITI!' : '🔥 GREAT RUN — TRY N2O BOOST NEXT TIME!');
+    }
+
+    // UI Button Listeners
+    modalStartBtn.addEventListener('click', () => {
+      if (state.paused) {
+        togglePause();
+      } else {
+        startRace();
+      }
+    });
+    modalResetBtn.addEventListener('click', startRace);
+    pauseBtn.addEventListener('click', togglePause);
+    cameraBtn.addEventListener('click', toggleCameraMode);
+    headlightBtn.addEventListener('click', toggleHeadlights);
+
+    opponentSelectEl.addEventListener('change', (e) => {
+      state.oppCountry = e.target.value;
+      applyOpponentCountry(state.oppCountry);
+      setBanner(`🏁 OPPONENT SET: ${OPPONENT_THEMES[state.oppCountry].name.toUpperCase()}`);
+    });
+
+    soundToggleBtn.addEventListener('click', () => {
+      audio.init();
+      audio.setMuted(!audio.muted);
+      soundToggleBtn.textContent = audio.muted ? '🔇 OFF' : '🔊 ON';
+    });
+
+    // Helper for Hold Buttons (Touch + Mouse)
+    function bindHoldButton(btn, keyName, extraClass = 'pressed') {
+      const down = (e) => {
+        e.preventDefault();
+        audio.init();
+        keys[keyName] = true;
+        btn.classList.add(extraClass);
+      };
+      const up = (e) => {
+        e.preventDefault();
+        keys[keyName] = false;
+        btn.classList.remove(extraClass);
+      };
+      btn.addEventListener('mousedown', down);
+      btn.addEventListener('touchstart', down, { passive: false });
+      window.addEventListener('mouseup', up);
+      window.addEventListener('touchend', up);
+      btn.addEventListener('mouseleave', up);
+    }
+
+    bindHoldButton(document.getElementById('btn-left'), 'left');
+    bindHoldButton(document.getElementById('btn-right'), 'right');
+    bindHoldButton(document.getElementById('btn-brake'), 'down');
+    bindHoldButton(document.getElementById('btn-gas'), 'up');
+    bindHoldButton(n2oBoostBtn, 'boost', 'boosting');
+
+    // Keyboard Controls
+    window.addEventListener('keydown', (e) => {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+        e.preventDefault();
+      }
+      audio.init();
+      if (e.code === 'ArrowUp' || e.code === 'KeyW') keys.up = true;
+      if (e.code === 'ArrowDown' || e.code === 'KeyS') keys.down = true;
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
+      if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
+      if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.code === 'Space') {
+        keys.boost = true;
+        n2oBoostBtn.classList.add('boosting');
+      }
+      if (e.code === 'KeyC') toggleCameraMode();
+      if (e.code === 'KeyH') toggleHeadlights();
+      if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'ArrowUp' || e.code === 'KeyW') keys.up = false;
+      if (e.code === 'ArrowDown' || e.code === 'KeyS') keys.down = false;
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
+      if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+      if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.code === 'Space') {
+        keys.boost = false;
+        n2oBoostBtn.classList.remove('boosting');
+      }
+    });
+
+    /* =========================================================================
+       7. MAIN SIMULATION & RENDER LOOP
+       ========================================================================= */
+    let lastTime = performance.now();
+
+    function animate(now) {
+      requestAnimationFrame(animate);
+      const dt = Math.min(0.05, (now - lastTime) / 1000);
+      lastTime = now;
+
+      if (state.running && !state.paused) {
+        // Nitrous Boost Logic
+        if (keys.boost && state.nitro > 2 && state.speed > 4) {
+          state.boosting = true;
+          state.nitro = Math.max(0, state.nitro - 28 * dt);
+        } else {
+          state.boosting = false;
+          state.nitro = Math.min(100, state.nitro + 9 * dt);
+        }
+        nitroVignetteEl.classList.toggle('active', state.boosting);
+        n2oFillEl.style.height = `${Math.round(state.nitro)}%`;
+
+        // Longitudinal Acceleration & Braking
+        const maxSpeedMs = state.boosting ? 56 : 44; // ~201 KMH with N2O, ~158 KMH normal
+        const accelRate = state.boosting ? 26 : 15;
+
+        if (keys.up || state.boosting) {
+          state.speed = Math.min(maxSpeedMs, state.speed + accelRate * dt);
+        } else if (keys.down) {
+          state.speed = Math.max(-10, state.speed - 28 * dt);
+        } else {
+          // Gentle rolling drag
+          state.speed *= (1 - 0.65 * dt);
+          if (Math.abs(state.speed) < 0.15) state.speed = 0;
+        }
+
+        // Steering & Wheel Rotation
+        const targetSteer = (keys.left ? -1 : 0) + (keys.right ? 1 : 0);
+        state.steerAngle += (targetSteer - state.steerAngle) * Math.min(1, 10 * dt);
+        steeringWheelGroup.rotation.z = -state.steerAngle * 0.62;
+
+        const lateralFactor = Math.min(1.25, Math.abs(state.speed) / 18 + 0.25);
+        state.playerX += state.steerAngle * 9.5 * lateralFactor * dt;
+
+        // Guardrail Bounce Protection
+        if (Math.abs(state.playerX) > LANE_LIMIT) {
+          state.playerX = Math.sign(state.playerX) * LANE_LIMIT;
+          state.speed *= 0.85;
+          audio.playImpact();
+        }
+
+        state.playerZ += state.speed * dt;
+
+        // Automatic 6-Speed Transmission (S1 .. S6)
+        const kmh = Math.max(0, state.speed * 3.6);
+        const newGear = Math.min(6, Math.max(1, Math.floor(kmh / 30) + 1));
+        if (newGear !== state.gear) {
+          state.gear = newGear;
+          gearDisplayEl.textContent = `S${state.gear}`;
+          audio.playGearShift();
+        }
+        const gearFloor = (state.gear - 1) * 30;
+        const rpmRatio = Math.min(1, Math.max(0.15, (kmh - gearFloor) / 32));
+
+        // Update Top-Right RPM Segments & Digital Speed
+        const litCount = Math.round(rpmRatio * rpmSegEls.length);
+        rpmSegEls.forEach((seg, idx) => {
+          seg.className = 'rpm-seg';
+          if (idx < litCount) {
+            if (idx >= 8) seg.classList.add('lit-red');
+            else if (idx >= 6) seg.classList.add('lit-amber');
+            else seg.classList.add('lit-cyan');
+          }
+        });
+        kmhDisplayEl.textContent = String(Math.round(kmh)).padStart(3, '0');
+        distValEl.textContent = (state.playerZ / 1000).toFixed(2).padStart(5, '0');
+
+        // Continuous Speed Distance Points
+        if (state.speed > 5) {
+          state.score += Math.round(state.speed * dt * 2.5);
+          scoreValEl.textContent = String(state.score);
+        }
+
+        // Update Opponent World Racer AI
+        const targetOppSpeed = 33 + Math.sin(state.oppZ * 0.015) * 4.5;
+        state.oppSpeed += (targetOppSpeed - state.oppSpeed) * 2 * dt;
+        state.oppZ += state.oppSpeed * dt;
+        state.oppX += Math.sin(state.oppZ * 0.025) * 0.8 * dt;
+        state.oppX = Math.max(-LANE_LIMIT + 0.8, Math.min(LANE_LIMIT - 0.8, state.oppX));
+
+        // Update Highway Traffic & Near-Miss Overtake Bonus
+        trafficPool.forEach((t) => {
+          t.z += t.speed * dt;
+          if (t.z < state.playerZ - 25) {
+            // Recycle ahead on bridge
+            t.z = state.playerZ + 260 + Math.random() * 140;
+            t.lane = Math.floor(Math.random() * 4);
+            t.x = LANE_CENTERS[t.lane];
+            t.passed = false;
+          }
+          t.mesh.position.set(t.x, 0, t.z);
+
+          // Near-miss bonus when passing closely
+          if (!t.passed && t.z < state.playerZ - 2.5 && t.z > state.playerZ - 12) {
+            t.passed = true;
+            const latGap = Math.abs(t.x - state.playerX);
+            if (latGap < 3.4) {
+              state.score += 150;
+              scoreValEl.textContent = String(state.score);
+              audio.playNearMiss();
+              setBanner('⚡ NEAR-MISS OVERTAKE! +150 PTS');
+            }
+          }
+
+          // Collision Check with Traffic
+          if (Math.abs(t.z - state.playerZ) < 4.1 && Math.abs(t.x - state.playerX) < 1.85) {
+            state.speed = Math.max(8, state.speed * 0.48);
+            state.playerX += (state.playerX >= t.x ? 1.1 : -1.1);
+            t.z += 12;
+            audio.playImpact();
+            setBanner('💥 TRAFFIC BUMP! RECOVER SPEED!');
+          }
+        });
+
+        // Audio Update
+        const isScreeching = (keys.down && kmh > 45) || (Math.abs(state.steerAngle) > 0.75 && kmh > 95);
+        audio.update(kmh, rpmRatio, state.boosting, isScreeching, true);
+
+        // Check Finish Line
+        if (state.playerZ >= FINISH_Z) {
+          finishRace(true);
+        } else if (state.oppZ >= FINISH_Z) {
+          finishRace(false);
+        }
+      } else {
+        audio.update(0, 0.1, false, false, false);
+      }
+
+      // Position Player Bus, Opponent Car, and Active Camera
+      playerBus.position.set(state.playerX, 0, state.playerZ);
+      playerBus.rotation.y = -state.steerAngle * 0.08;
+      opponentCar.position.set(state.oppX, 0, state.oppZ);
+
+      if (state.cockpitView) {
+        // First-Person Driver Seat inside Cockpit
+        const shakeY = state.speed > 5 ? Math.sin(now * 0.045) * 0.006 * (state.speed / 45) : 0;
+        camera.position.set(state.playerX - 0.25, 1.85 + shakeY, state.playerZ + 1.45);
+        camera.lookAt(state.playerX - 0.25 + state.steerAngle * 1.4, 1.62, state.playerZ + 28);
+        camera.rotation.z = -state.steerAngle * 0.025;
+      } else {
+        // External Chase Camera
+        camera.position.set(state.playerX * 0.85, 3.8, state.playerZ - 8.5);
+        camera.lookAt(state.playerX, 1.5, state.playerZ + 14);
+        camera.rotation.z = 0;
+      }
+
+      // Render Dynamic Gauges & Live Side/Rearview Mirrors
+      renderCockpitTextures(
+        Math.max(0, state.speed * 3.6),
+        Math.min(1, (state.speed * 3.6) / 180),
+        state.steerAngle,
+        state.oppZ - state.playerZ,
+        state.oppX - state.playerX,
+        state.playerZ
+      );
+
+      renderer.render(scene, camera);
+    }
+
+    // Handle Screen Resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Initialize Default State & Start Render Loop
+    applyOpponentCountry('dominican');
+    resetGame();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
