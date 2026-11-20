@@ -975,39 +975,62 @@
       new THREE.MeshPhongMaterial({ color: 0x1d6fa5, shininess: 65 })
     );
     oceanMesh.rotation.x = -Math.PI / 2;
-    oceanMesh.position.set(0, -14, 500);
+    oceanMesh.position.set(0, -12.0, 500);
     scene.add(oceanMesh);
 
-    // Highway & Suspension Bridge Constants
+    // Highway & Elevated Suspension Bridge Constants
+    const BRIDGE_DECK_Y = 6.0;
     const ROAD_WIDTH = 13.6;
     const LANE_CENTERS = [-4.6, -1.55, 1.55, 4.6];
     const LANE_LIMIT = 5.6;
     const FINISH_Z = 950;
-
-    // Asphalt Deck
     const roadLen = FINISH_Z + 180;
+    const roadCenterZ = roadLen / 2 - 40;
+
+    // Elevated Asphalt Road Deck (Top Surface at y = BRIDGE_DECK_Y = 6.0)
     const roadMesh = new THREE.Mesh(
-      new THREE.BoxGeometry(ROAD_WIDTH + 1.6, 0.8, roadLen),
+      new THREE.BoxGeometry(ROAD_WIDTH + 1.6, 0.35, roadLen),
       new THREE.MeshStandardMaterial({ color: 0x3b4048, roughness: 0.82 })
     );
-    roadMesh.position.set(0, -0.4, roadLen / 2 - 40);
+    roadMesh.position.set(0, BRIDGE_DECK_Y - 0.175, roadCenterZ);
     roadMesh.receiveShadow = true;
     scene.add(roadMesh);
 
-    // Double Solid Center White/Yellow Lines (Matching Reference Image)
+    // Bridge Deck Structural Girder / Under-Structure (y = 4.6 to y = 5.825)
+    const girderMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.55, roughness: 0.5 });
+    const deckGirder = new THREE.Mesh(
+      new THREE.BoxGeometry(ROAD_WIDTH + 2.4, 1.25, roadLen),
+      girderMat
+    );
+    deckGirder.position.set(0, BRIDGE_DECK_Y - 0.95, roadCenterZ);
+    scene.add(deckGirder);
+
+    // Concrete Support Piers extending from Bridge Girder down into Ocean Water (y = -12.0)
+    const pierMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.7 });
+    for (let pz = 40; pz <= FINISH_Z + 80; pz += 140) {
+      [-1, 1].forEach((side) => {
+        const pierHeight = (BRIDGE_DECK_Y - 1.4) - (-12.0);
+        const pier = new THREE.Mesh(new THREE.BoxGeometry(1.8, pierHeight, 2.2), pierMat);
+        pier.position.set(side * (ROAD_WIDTH / 2 - 0.6), -12.0 + pierHeight / 2, pz);
+        scene.add(pier);
+      });
+    }
+
+    // Double Solid Center White Lines on Bridge Deck Surface
     const centerStripeMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
     [-0.14, 0.14].forEach((offsetX) => {
       const solidLine = new THREE.Mesh(new THREE.PlaneGeometry(0.12, roadLen), centerStripeMat);
       solidLine.rotation.x = -Math.PI / 2;
-      solidLine.position.set(offsetX, 0.015, roadLen / 2 - 40);
+      solidLine.position.set(offsetX, BRIDGE_DECK_Y + 0.015, roadCenterZ);
       scene.add(solidLine);
     });
 
-    // Edge Solid Lines & Dashed Lane Dividers
+    // Edge Yellow/White Solid Lines & Dashed Lane Dividers on Bridge Deck Surface
+    const yellowEdgeMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
     [-ROAD_WIDTH / 2 + 0.35, ROAD_WIDTH / 2 - 0.35].forEach((edgeX) => {
-      const edgeLine = new THREE.Mesh(new THREE.PlaneGeometry(0.16, roadLen), centerStripeMat);
+      const edgeLine = new THREE.Mesh(new THREE.PlaneGeometry(0.16, roadLen), yellowEdgeMat);
       edgeLine.rotation.x = -Math.PI / 2;
-      edgeLine.position.set(edgeX, 0.015, roadLen / 2 - 40);
+      edgeLine.position.set(edgeX, BRIDGE_DECK_Y + 0.015, roadCenterZ);
       scene.add(edgeLine);
     });
 
@@ -1016,61 +1039,77 @@
       [-3.1, 3.1].forEach((laneDividerX) => {
         const dash = new THREE.Mesh(dashGeo, centerStripeMat);
         dash.rotation.x = -Math.PI / 2;
-        dash.position.set(laneDividerX, 0.015, z);
+        dash.position.set(laneDividerX, BRIDGE_DECK_Y + 0.015, z);
         scene.add(dash);
       });
     }
 
-    // Metallic Guardrails, Yellow Safety Railings & Streetlight Poles
+    // Start Line on Bridge Deck Surface (z = 0)
+    for (let i = -6; i <= 6; i++) {
+      const startTile = new THREE.Mesh(
+        new THREE.BoxGeometry(1.0, 0.04, 1.1),
+        new THREE.MeshBasicMaterial({ color: i % 2 === 0 ? 0x22c55e : 0xf8fafc })
+      );
+      startTile.position.set(i * 1.0, BRIDGE_DECK_Y + 0.02, 0);
+      scene.add(startTile);
+    }
+
+    // Metallic Guardrails, Golden-Yellow Safety Railings, Red Top Rails & Streetlights on Bridge Deck
     const guardrailMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.65, roughness: 0.35 });
     const yellowRailMat = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.45 });
+    const redTopRailMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.4 });
     const poleMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.6 });
     const lampBulbMat = new THREE.MeshBasicMaterial({ color: 0xfef9c3 });
 
     [-1, 1].forEach((side) => {
       const railX = side * (ROAD_WIDTH / 2 + 0.15);
       const railBeam = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.42, roadLen), guardrailMat);
-      railBeam.position.set(railX, 0.55, roadLen / 2 - 40);
+      railBeam.position.set(railX, BRIDGE_DECK_Y + 0.55, roadCenterZ);
       scene.add(railBeam);
 
       const yellowTop = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.25, roadLen), yellowRailMat);
-      yellowTop.position.set(side * (ROAD_WIDTH / 2 + 0.55), 1.35, roadLen / 2 - 40);
+      yellowTop.position.set(side * (ROAD_WIDTH / 2 + 0.55), BRIDGE_DECK_Y + 1.15, roadCenterZ);
       scene.add(yellowTop);
+
+      const redTopRail = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.22, roadLen), redTopRailMat);
+      redTopRail.position.set(side * (ROAD_WIDTH / 2 + 0.95), BRIDGE_DECK_Y + 1.45, roadCenterZ);
+      scene.add(redTopRail);
 
       for (let z = 10; z < FINISH_Z + 100; z += 36) {
         const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.14, 6.2, 8), poleMat);
-        pole.position.set(side * (ROAD_WIDTH / 2 + 0.55), 3.1, z);
+        pole.position.set(side * (ROAD_WIDTH / 2 + 0.55), BRIDGE_DECK_Y + 3.1, z);
         scene.add(pole);
 
         const arm = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.1, 0.1), poleMat);
-        arm.position.set(side * (ROAD_WIDTH / 2 - 0.25), 6.1, z);
+        arm.position.set(side * (ROAD_WIDTH / 2 - 0.25), BRIDGE_DECK_Y + 6.1, z);
         scene.add(arm);
 
         const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.12, 0.25), lampBulbMat);
-        lamp.position.set(side * (ROAD_WIDTH / 2 - 0.9), 6.02, z);
+        lamp.position.set(side * (ROAD_WIDTH / 2 - 0.9), BRIDGE_DECK_Y + 6.02, z);
         scene.add(lamp);
       }
     });
 
-    // Golden-Red Suspension Bridge Towers & Sweeping Red Main Cables
+    // Golden-Red Suspension Bridge H-Towers & Sweeping Red Main Cables
     const bridgeRedMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.38, metalness: 0.25 });
     const towerZs = [160, 440, 720];
-    const TOWER_TOP_Y = 28.0;
-    const CABLE_LOW_Y = 2.2;
+    const TOWER_TOP_Y = 34.0;          // 28m above the road deck at y = 6.0
+    const CABLE_PEAK_Y = 33.5;         // Cable saddle peak at tower tops
+    const CABLE_LOW_Y = BRIDGE_DECK_Y + 2.4; // y = 8.4 at mid-span above the deck
     const HALF_SPAN = 140.0;
 
     towerZs.forEach((tz) => {
       const towerGroup = new THREE.Group();
       [-1, 1].forEach((side) => {
-        // Tower legs extend from underwater piers (-14) up to TOWER_TOP_Y (28)
-        const legHeight = TOWER_TOP_Y + 14;
+        // Tower legs rise from underwater piers (y = -12.0) up past deck (y = 6.0) to TOWER_TOP_Y (34.0)
+        const legHeight = TOWER_TOP_Y - (-12.0);
         const leg = new THREE.Mesh(new THREE.BoxGeometry(1.5, legHeight, 1.8), bridgeRedMat);
-        leg.position.set(side * (ROAD_WIDTH / 2 + 0.95), -14 + legHeight / 2, tz);
+        leg.position.set(side * (ROAD_WIDTH / 2 + 0.95), -12.0 + legHeight / 2, tz);
         leg.castShadow = true;
         towerGroup.add(leg);
       });
-      // Horizontal Cross-Braces overhead forming a right-side-up H-tower above the roadway
-      [9.5, 16.0, 22.0, 27.2].forEach((braceY) => {
+      // Horizontal Cross-Braces overhead above the road deck (y = 14.5, 22.0, 29.5) so vehicles drive underneath cleanly
+      [14.5, 22.0, 29.5].forEach((braceY) => {
         const brace = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH + 3.4, 1.25, 1.4), bridgeRedMat);
         brace.position.set(0, braceY, tz);
         towerGroup.add(brace);
@@ -1078,28 +1117,25 @@
       scene.add(towerGroup);
     });
 
-    // Sweeping Right-Side-Up Catenary Red Main Suspension Cables + Vertical Suspender Ropes
+    // Sweeping Right-Side-Up Catenary Red Main Suspension Cables + Vertical Suspender Ropes above the Deck
     function getCableHeight(z) {
-      // Distance to the nearest tower: d = 0 at tower (peak), d = HALF_SPAN at mid-span (lowest dip)
       let minDist = HALF_SPAN;
       towerZs.forEach((tz) => {
         const d = Math.abs(z - tz);
         if (d < minDist) minDist = d;
       });
-      // At d = 0 (at tower): u = 1 -> y = TOWER_TOP_Y (28m high)
-      // At d = HALF_SPAN (mid-span between towers): u = 0 -> y = CABLE_LOW_Y (2.2m above deck)
       const u = Math.max(0, 1 - minDist / HALF_SPAN);
-      return CABLE_LOW_Y + (TOWER_TOP_Y - CABLE_LOW_Y) * (u * u);
+      return CABLE_LOW_Y + (CABLE_PEAK_Y - CABLE_LOW_Y) * (u * u);
     }
 
     const suspenderMat = new THREE.MeshBasicMaterial({ color: 0xb91c1c });
+    const ropeBottomY = BRIDGE_DECK_Y + 1.35; // y = 7.35, always above the road deck
     for (let z = 20; z < 860; z += 10) {
       const y1 = getCableHeight(z);
       const y2 = getCableHeight(z + 10);
       const midY = (y1 + y2) / 2;
       const dy = y2 - y1;
       const segLen = Math.hypot(10, dy);
-      // Cylinder default axis is +Y; rotating by +PI/2 tilts +Y onto +Z, so subtract atan2(dy, 10) to pitch +Y upward when dy > 0
       const angleX = Math.PI / 2 - Math.atan2(dy, 10);
 
       [-1, 1].forEach((side) => {
@@ -1109,9 +1145,8 @@
         mainSeg.position.set(cableX, midY, z + 5);
         scene.add(mainSeg);
 
-        // Vertical suspender rope hanging strictly downward from main cable (y1) to deck guardrail (1.35m)
-        const ropeBottomY = 1.35;
-        if (y1 > ropeBottomY + 0.3) {
+        // Vertical suspender rope hanging strictly downward from main cable (y1) to bridge top railing (7.35)
+        if (y1 > ropeBottomY + 0.25) {
           const ropeHeight = y1 - ropeBottomY;
           const vRope = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, ropeHeight, 6), suspenderMat);
           vRope.position.set(cableX, ropeBottomY + ropeHeight / 2, z);
@@ -1120,21 +1155,21 @@
       });
     }
 
-    // Checkered Finish Line Arch at Z = FINISH_Z
+    // Checkered Finish Line Arch on Bridge Deck at Z = FINISH_Z
     const finishGroup = new THREE.Group();
     for (let i = -6; i <= 6; i++) {
       const tile = new THREE.Mesh(
         new THREE.BoxGeometry(1.0, 0.06, 1.4),
         new THREE.MeshBasicMaterial({ color: i % 2 === 0 ? 0xffffff : 0x111827 })
       );
-      tile.position.set(i * 1.0, 0.03, FINISH_Z);
+      tile.position.set(i * 1.0, BRIDGE_DECK_Y + 0.03, FINISH_Z);
       finishGroup.add(tile);
     }
     const archBanner = new THREE.Mesh(
       new THREE.BoxGeometry(ROAD_WIDTH + 2, 1.6, 0.6),
       new THREE.MeshStandardMaterial({ color: 0x00209F })
     );
-    archBanner.position.set(0, 8.2, FINISH_Z);
+    archBanner.position.set(0, BRIDGE_DECK_Y + 8.2, FINISH_Z);
     finishGroup.add(archBanner);
     scene.add(finishGroup);
 
@@ -1408,6 +1443,7 @@
         speed: 14 + (i % 4) * 3.5,
         passed: false,
       });
+      tGroup.position.set(LANE_CENTERS[i % 4], BRIDGE_DECK_Y, 65 + i * 62);
     }
 
     /* =========================================================================
@@ -1626,7 +1662,7 @@
         t.x = LANE_CENTERS[t.lane];
         t.z = 65 + idx * 62;
         t.passed = false;
-        t.mesh.position.set(t.x, 0, t.z);
+        t.mesh.position.set(t.x, BRIDGE_DECK_Y, t.z);
       });
 
       scoreValEl.textContent = '0';
@@ -1855,7 +1891,7 @@
             t.x = LANE_CENTERS[t.lane];
             t.passed = false;
           }
-          t.mesh.position.set(t.x, 0, t.z);
+          t.mesh.position.set(t.x, BRIDGE_DECK_Y, t.z);
 
           // Near-miss bonus when passing closely
           if (!t.passed && t.z < state.playerZ - 2.5 && t.z > state.playerZ - 12) {
@@ -1893,21 +1929,21 @@
         audio.update(0, 0.1, false, false, false);
       }
 
-      // Position Player Bus, Opponent Car, and Active Camera
-      playerBus.position.set(state.playerX, 0, state.playerZ);
+      // Position Player Bus, Opponent Car, and Active Camera directly ON TOP of Bridge Deck (y = BRIDGE_DECK_Y)
+      playerBus.position.set(state.playerX, BRIDGE_DECK_Y, state.playerZ);
       playerBus.rotation.y = -state.steerAngle * 0.08;
-      opponentCar.position.set(state.oppX, 0, state.oppZ);
+      opponentCar.position.set(state.oppX, BRIDGE_DECK_Y, state.oppZ);
 
       if (state.cockpitView) {
-        // First-Person Driver Seat inside Cockpit
+        // First-Person Driver Seat inside Cockpit on Elevated Bridge Deck
         const shakeY = state.speed > 5 ? Math.sin(now * 0.045) * 0.006 * (state.speed / 45) : 0;
-        camera.position.set(state.playerX - 0.25, 1.85 + shakeY, state.playerZ + 1.45);
-        camera.lookAt(state.playerX - 0.25 + state.steerAngle * 1.4, 1.62, state.playerZ + 28);
+        camera.position.set(state.playerX - 0.25, BRIDGE_DECK_Y + 1.85 + shakeY, state.playerZ + 1.45);
+        camera.lookAt(state.playerX - 0.25 + state.steerAngle * 1.4, BRIDGE_DECK_Y + 1.62, state.playerZ + 28);
         camera.rotation.z = -state.steerAngle * 0.025;
       } else {
-        // External Chase Camera
-        camera.position.set(state.playerX * 0.85, 3.8, state.playerZ - 8.5);
-        camera.lookAt(state.playerX, 1.5, state.playerZ + 14);
+        // External Chase Camera on Elevated Bridge Deck
+        camera.position.set(state.playerX * 0.85, BRIDGE_DECK_Y + 3.8, state.playerZ - 8.5);
+        camera.lookAt(state.playerX, BRIDGE_DECK_Y + 1.5, state.playerZ + 14);
         camera.rotation.z = 0;
       }
 
