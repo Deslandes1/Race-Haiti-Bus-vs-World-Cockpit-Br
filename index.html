@@ -1093,9 +1093,9 @@
     // Golden-Red Suspension Bridge Side Towers & Sweeping Red Main Cables (Completely Open Sky Above Roadway)
     const bridgeRedMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.38, metalness: 0.25 });
     const towerZs = [160, 440, 720];
-    const TOWER_TOP_Y = 26.0;              // Rises cleanly outside the deck edges to y = 26
-    const CABLE_PEAK_Y = 25.5;             // Cable saddle peak at outer tower tops
-    const CABLE_LOW_Y = BRIDGE_DECK_Y + 2.2; // y = 8.2 at mid-span outside the guardrails
+    const TOWER_TOP_Y = 28.0;               // Rises cleanly outside the deck edges to y = 28
+    const CABLE_PEAK_Y = 27.5;              // Cable saddle peak at outer tower tops
+    const CABLE_LOW_Y = BRIDGE_DECK_Y + 6.5; // y = 12.5 at mid-span so cables stay high in the sky above vehicles
     const HALF_SPAN = 140.0;
     const TOWER_OFFSET_X = ROAD_WIDTH / 2 + 1.1;
 
@@ -1557,27 +1557,17 @@
       const auxAngle = Math.PI * 0.75 + Math.min(1, rpmRatio) * Math.PI * 1.5;
       auxGaugeCtx.strokeStyle = '#38bdf8';
       auxGaugeCtx.lineWidth = 4;
-      auxGaugeCtx.beginPath();
-      auxGaugeCtx.moveTo(64, 64);
-      auxGaugeCtx.lineTo(64 + Math.cos(auxAngle) * 40, 64 + Math.sin(auxAngle) * 40);
-      auxGaugeCtx.stroke();
-      auxGaugeTex.needsUpdate = true;
-
-      // 3. Left Yellow Side Mirror (Right-Side-Up Bridge & Highway Reflection)
-      leftMirrorCtx.fillStyle = '#60a5fa';
-      leftMirrorCtx.fillRect(0, 0, 256, 72);
-      leftMirrorCtx.fillStyle = '#334155';
-      leftMirrorCtx.fillRect(0, 72, 256, 72);
-
-      // Reflected Red Bridge Tower & Catenary Cable in Left Mirror
-      leftMirrorCtx.strokeStyle = '#dc2626';
-      leftMirrorCtx.lineWidth = 4;
+      // 3. Left Yellow Side Mirror (Open Blue Sky & Clouds Overhead + Road Reflection Below)
+      leftMirrorCtx.fillStyle = '#56a8f5';
+      leftMirrorCtx.fillRect(0, 0, 256, 76);
+      leftMirrorCtx.fillStyle = 'rgba(255, 255, 255, 0.72)';
       leftMirrorCtx.beginPath();
-      leftMirrorCtx.moveTo(46, 16);
-      leftMirrorCtx.lineTo(46, 72);
-      leftMirrorCtx.moveTo(46, 18);
-      leftMirrorCtx.quadraticCurveTo(130, 64, 220, 22);
-      leftMirrorCtx.stroke();
+      leftMirrorCtx.ellipse(72, 24, 34, 9, 0, 0, Math.PI * 2);
+      leftMirrorCtx.ellipse(185, 34, 42, 10, 0, 0, Math.PI * 2);
+      leftMirrorCtx.fill();
+
+      leftMirrorCtx.fillStyle = '#334155';
+      leftMirrorCtx.fillRect(0, 76, 256, 68);
 
       // Moving Dashed Lane Line in Left Mirror
       const dashOffset = (playerZ * 12) % 36;
@@ -1586,25 +1576,35 @@
       leftMirrorCtx.setLineDash([18, 18]);
       leftMirrorCtx.lineDashOffset = -dashOffset;
       leftMirrorCtx.beginPath();
-      leftMirrorCtx.moveTo(155, 74);
+      leftMirrorCtx.moveTo(155, 78);
       leftMirrorCtx.lineTo(225, 144);
       leftMirrorCtx.stroke();
       leftMirrorCtx.setLineDash([]);
       leftMirrorTex.needsUpdate = true;
 
-      // 4. Top-Right Rearview Mirror (Right-Side-Up Bridge & Opponent Behind View)
-      rearMirrorCtx.fillStyle = '#60a5fa';
-      rearMirrorCtx.fillRect(0, 0, 320, 56);
+      // 4. Top-Right Rearview Mirror (Open Blue Sky, Sun & Clouds Overhead + Road Behind)
+      rearMirrorCtx.fillStyle = '#56a8f5';
+      rearMirrorCtx.fillRect(0, 0, 320, 62);
+      rearMirrorCtx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+      rearMirrorCtx.beginPath();
+      rearMirrorCtx.ellipse(75, 22, 36, 8, 0, 0, Math.PI * 2);
+      rearMirrorCtx.ellipse(245, 26, 40, 8, 0, 0, Math.PI * 2);
+      rearMirrorCtx.fill();
+      rearMirrorCtx.fillStyle = '#fef9c3';
+      rearMirrorCtx.beginPath();
+      rearMirrorCtx.arc(160, 18, 9, 0, Math.PI * 2);
+      rearMirrorCtx.fill();
+
       rearMirrorCtx.fillStyle = '#334155';
-      rearMirrorCtx.fillRect(0, 56, 320, 64);
+      rearMirrorCtx.fillRect(0, 62, 320, 58);
 
       // Perspective Road Lines in Rearview Mirror
       rearMirrorCtx.strokeStyle = '#facc15';
       rearMirrorCtx.lineWidth = 2;
       rearMirrorCtx.beginPath();
-      rearMirrorCtx.moveTo(110, 56);
+      rearMirrorCtx.moveTo(110, 62);
       rearMirrorCtx.lineTo(20, 120);
-      rearMirrorCtx.moveTo(210, 56);
+      rearMirrorCtx.moveTo(210, 62);
       rearMirrorCtx.lineTo(300, 120);
       rearMirrorCtx.stroke();
 
