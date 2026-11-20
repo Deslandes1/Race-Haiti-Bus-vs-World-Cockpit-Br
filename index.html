@@ -1055,56 +1055,66 @@
     // Golden-Red Suspension Bridge Towers & Sweeping Red Main Cables
     const bridgeRedMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.38, metalness: 0.25 });
     const towerZs = [160, 440, 720];
+    const TOWER_TOP_Y = 28.0;
+    const CABLE_LOW_Y = 2.2;
+    const HALF_SPAN = 140.0;
 
     towerZs.forEach((tz) => {
       const towerGroup = new THREE.Group();
       [-1, 1].forEach((side) => {
-        const leg = new THREE.Mesh(new THREE.BoxGeometry(1.5, 48, 1.8), bridgeRedMat);
-        leg.position.set(side * (ROAD_WIDTH / 2 + 0.95), 14, tz);
+        // Tower legs extend from underwater piers (-14) up to TOWER_TOP_Y (28)
+        const legHeight = TOWER_TOP_Y + 14;
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(1.5, legHeight, 1.8), bridgeRedMat);
+        leg.position.set(side * (ROAD_WIDTH / 2 + 0.95), -14 + legHeight / 2, tz);
         leg.castShadow = true;
         towerGroup.add(leg);
       });
-      // Horizontal Cross-Braces overhead (Golden Gate / San Francisco style)
-      [14, 23, 32, 37].forEach((braceY) => {
-        const brace = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH + 3.4, 1.35, 1.4), bridgeRedMat);
+      // Horizontal Cross-Braces overhead forming a right-side-up H-tower above the roadway
+      [9.5, 16.0, 22.0, 27.2].forEach((braceY) => {
+        const brace = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH + 3.4, 1.25, 1.4), bridgeRedMat);
         brace.position.set(0, braceY, tz);
         towerGroup.add(brace);
       });
       scene.add(towerGroup);
     });
 
-    // Sweeping Catenary Red Main Suspension Cables + Vertical Suspender Ropes
+    // Sweeping Right-Side-Up Catenary Red Main Suspension Cables + Vertical Suspender Ropes
     function getCableHeight(z) {
-      // Parabolic catenary between towers at 160, 440, 720
-      let minDist = Infinity;
+      // Distance to the nearest tower: d = 0 at tower (peak), d = HALF_SPAN at mid-span (lowest dip)
+      let minDist = HALF_SPAN;
       towerZs.forEach((tz) => {
         const d = Math.abs(z - tz);
         if (d < minDist) minDist = d;
       });
-      const norm = Math.min(1, minDist / 140);
-      return 37.5 - (1 - Math.pow(1 - norm, 2)) * 31.5;
+      // At d = 0 (at tower): u = 1 -> y = TOWER_TOP_Y (28m high)
+      // At d = HALF_SPAN (mid-span between towers): u = 0 -> y = CABLE_LOW_Y (2.2m above deck)
+      const u = Math.max(0, 1 - minDist / HALF_SPAN);
+      return CABLE_LOW_Y + (TOWER_TOP_Y - CABLE_LOW_Y) * (u * u);
     }
 
-    const suspenderMat = new THREE.MeshBasicMaterial({ color: 0x991b1b });
-    for (let z = 20; z <= 860; z += 10) {
+    const suspenderMat = new THREE.MeshBasicMaterial({ color: 0xb91c1c });
+    for (let z = 20; z < 860; z += 10) {
       const y1 = getCableHeight(z);
       const y2 = getCableHeight(z + 10);
       const midY = (y1 + y2) / 2;
       const dy = y2 - y1;
       const segLen = Math.hypot(10, dy);
-      const angleX = -Math.atan2(dy, 10);
+      // Cylinder default axis is +Y; rotating by +PI/2 tilts +Y onto +Z, so subtract atan2(dy, 10) to pitch +Y upward when dy > 0
+      const angleX = Math.PI / 2 - Math.atan2(dy, 10);
 
       [-1, 1].forEach((side) => {
         const cableX = side * (ROAD_WIDTH / 2 + 0.95);
-        const mainSeg = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, segLen + 0.3, 8), bridgeRedMat);
-        mainSeg.rotation.x = Math.PI / 2 + angleX;
+        const mainSeg = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, segLen + 0.25, 8), bridgeRedMat);
+        mainSeg.rotation.x = angleX;
         mainSeg.position.set(cableX, midY, z + 5);
         scene.add(mainSeg);
 
-        // Vertical suspender cable down to deck
-        if (y1 > 2.2) {
-          const vRope = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, y1 - 1.2, 6), suspenderMat);
-          vRope.position.set(cableX, (y1 + 1.2) / 2, z);
+        // Vertical suspender rope hanging strictly downward from main cable (y1) to deck guardrail (1.35m)
+        const ropeBottomY = 1.35;
+        if (y1 > ropeBottomY + 0.3) {
+          const ropeHeight = y1 - ropeBottomY;
+          const vRope = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, ropeHeight, 6), suspenderMat);
+          vRope.position.set(cableX, ropeBottomY + ropeHeight / 2, z);
           scene.add(vRope);
         }
       });
@@ -1410,102 +1420,97 @@
       sc.fillRect(0, 0, 256, 160);
 
       // White Semi-Circular Dial
-      sc.beginPath();
-      sc.arc(128, 108, 76, Math.PI, 0, false);
-      sc.fillStyle = '#f1f5f9';
-      sc.fill();
-      sc.lineWidth = 5;
-      sc.strokeStyle = '#38bdf8';
-      sc.stroke();
-
-      // Speed Ticks & Numbers
-      sc.fillStyle = '#0f172a';
-      sc.font = 'bold 11px sans-serif';
-      sc.textAlign = 'center';
-      for (let s = 0; s <= 180; s += 30) {
-        const ang = Math.PI + (s / 180) * Math.PI;
-        const tx = 128 + Math.cos(ang) * 56;
-        const ty = 108 + Math.sin(ang) * 56;
-        sc.fillText(String(s), tx, ty + 4);
-      }
-
-      // Red Needle
-      const needleAng = Math.PI + Math.min(1, kmh / 180) * Math.PI;
-      sc.beginPath();
-      sc.moveTo(128, 108);
-      sc.lineTo(128 + Math.cos(needleAng) * 66, 108 + Math.sin(needleAng) * 66);
-      sc.strokeStyle = '#ef4444';
-      sc.lineWidth = 4;
-      sc.stroke();
-
-      // Digital Trip Strip at Bottom
-      sc.fillStyle = '#1e293b';
-      sc.fillRect(62, 118, 132, 30);
-      sc.fillStyle = '#fb923c';
-      sc.font = 'bold 14px monospace';
-      sc.fillText(`${Math.round(kmh)} KMH · HAITI`, 128, 138);
-      speedoTex.needsUpdate = true;
-
-      // 2. Dual Auxiliary Dash Gauges
-      const ac = auxGaugeCtx;
-      ac.fillStyle = '#f8fafc';
-      ac.fillRect(0, 0, 128, 128);
-      ac.strokeStyle = '#ef4444';
-      ac.lineWidth = 6;
-      ac.beginPath();
-      ac.arc(64, 64, 54, 0.75 * Math.PI, 2.25 * Math.PI);
-      ac.stroke();
-
-      const auxAng = 0.75 * Math.PI + rpmRatio * 1.5 * Math.PI;
-      ac.beginPath();
-      ac.moveTo(64, 64);
-      ac.lineTo(64 + Math.cos(auxAng) * 44, 64 + Math.sin(auxAng) * 44);
-      ac.strokeStyle = '#dc2626';
-      ac.lineWidth = 4;
-      ac.stroke();
-      auxGaugeTex.needsUpdate = true;
-
-      // 3. Left Yellow Side Mirror Live Reflection (Bridge Cables, Road & Traffic Behind)
+      // 3. Left Yellow Side Mirror Live Reflection (Right-Side-Up Sky, Towers, Red Cables & Road)
       const lm = leftMirrorCtx;
-      lm.fillStyle = '#60a5fa';
+      // Sky at top (y: 0..72)
+      const skyGradL = lm.createLinearGradient(0, 0, 0, 72);
+      skyGradL.addColorStop(0, '#38bdf8');
+      skyGradL.addColorStop(1, '#bae6fd');
+      lm.fillStyle = skyGradL;
       lm.fillRect(0, 0, 256, 72);
+      // Asphalt road at bottom (y: 72..144)
       lm.fillStyle = '#334155';
       lm.fillRect(0, 72, 256, 72);
 
-      // Red suspension cables reflected in mirror
+      // Right-side-up red H-shaped bridge tower rising from road horizon (y=72) up into sky (y=12)
       lm.strokeStyle = '#dc2626';
-      lm.lineWidth = 3;
+      lm.lineWidth = 3.5;
       lm.beginPath();
-      lm.moveTo(0, 18);
-      lm.quadraticCurveTo(128, 62, 256, 18);
+      lm.moveTo(76, 72); lm.lineTo(76, 12);
+      lm.moveTo(180, 72); lm.lineTo(180, 12);
+      lm.moveTo(76, 22); lm.lineTo(180, 22);
+      lm.moveTo(76, 38); lm.lineTo(180, 38);
       lm.stroke();
 
-      // Perspective lanes in side mirror
-      lm.strokeStyle = '#e2e8f0';
+      // Right-side-up sweeping red suspension cables hanging from tower tops (y=12) down toward guardrails (y=66)
+      lm.lineWidth = 2.5;
+      lm.beginPath();
+      lm.moveTo(0, 62);
+      lm.quadraticCurveTo(42, 54, 76, 12);
+      lm.quadraticCurveTo(128, 58, 180, 12);
+      lm.quadraticCurveTo(214, 54, 256, 62);
+      lm.stroke();
+
+      // Guardrail & perspective road lanes in side mirror
+      lm.strokeStyle = '#eab308';
       lm.lineWidth = 2;
       lm.beginPath();
-      lm.moveTo(95, 72); lm.lineTo(25, 144);
-      lm.moveTo(160, 72); lm.lineTo(230, 144);
+      lm.moveTo(0, 72); lm.lineTo(256, 72);
       lm.stroke();
 
-      // Distant reflected car silhouette
+      lm.strokeStyle = '#f8fafc';
+      lm.lineWidth = 2;
+      lm.beginPath();
+      lm.moveTo(96, 72); lm.lineTo(28, 144);
+      lm.moveTo(160, 72); lm.lineTo(228, 144);
+      lm.stroke();
+
+      // Distant reflected car right-side up on the road
+      const sideCarX = 118 + Math.sin(dashOffset * 0.05) * 6;
       lm.fillStyle = '#f8fafc';
-      lm.fillRect(118 + Math.sin(dashOffset * 0.05) * 6, 82, 20, 12);
+      lm.fillRect(sideCarX, 84, 20, 10);
+      lm.fillStyle = '#1e293b';
+      lm.fillRect(sideCarX + 3, 79, 14, 6);
       leftMirrorTex.needsUpdate = true;
 
-      // 4. Top-Right Rearview Mirror Live Reflection (Shows Opponent Car Behind)
+      // 4. Top-Right Rearview Mirror Live Reflection (Right-Side-Up Bridge Behind & Opponent Car)
       const rm = rearMirrorCtx;
-      rm.fillStyle = '#60a5fa';
+      // Sky at top (y: 0..56)
+      const skyGradR = rm.createLinearGradient(0, 0, 0, 56);
+      skyGradR.addColorStop(0, '#38bdf8');
+      skyGradR.addColorStop(1, '#bae6fd');
+      rm.fillStyle = skyGradR;
       rm.fillRect(0, 0, 320, 56);
+      // Asphalt road at bottom (y: 56..120)
       rm.fillStyle = '#334155';
       rm.fillRect(0, 56, 320, 64);
 
-      // Bridge towers in rearview
+      // Right-side-up red H-shaped bridge tower behind the bus (rising from y=56 up to y=10)
       rm.strokeStyle = '#dc2626';
-      rm.lineWidth = 3;
-      rm.strokeRect(110, 14, 100, 42);
+      rm.lineWidth = 3.5;
+      rm.beginPath();
+      rm.moveTo(108, 56); rm.lineTo(108, 10);
+      rm.moveTo(212, 56); rm.lineTo(212, 10);
+      rm.moveTo(108, 18); rm.lineTo(212, 18);
+      rm.moveTo(108, 30); rm.lineTo(212, 30);
+      rm.stroke();
 
-      // Lanes
+      // Right-side-up catenary red cables hanging from tower peaks (y=10) down toward bridge deck (y=50)
+      rm.lineWidth = 2.5;
+      rm.beginPath();
+      rm.moveTo(12, 48);
+      rm.quadraticCurveTo(64, 42, 108, 10);
+      rm.quadraticCurveTo(160, 44, 212, 10);
+      rm.quadraticCurveTo(256, 42, 308, 48);
+      rm.stroke();
+
+      // Guardrail horizon & perspective road lanes
+      rm.strokeStyle = '#eab308';
+      rm.lineWidth = 2;
+      rm.beginPath();
+      rm.moveTo(0, 56); rm.lineTo(320, 56);
+      rm.stroke();
+
       rm.strokeStyle = '#f8fafc';
       rm.lineWidth = 2;
       rm.beginPath();
@@ -1513,15 +1518,20 @@
       rm.moveTo(185, 56); rm.lineTo(255, 120);
       rm.stroke();
 
-      // Draw Opponent Car inside Rearview when behind player
+      // Draw Opponent Car right-side up (cabin on top, chassis & headlights below) inside Rearview when behind player
       if (oppRelZ < 0 && oppRelZ > -140) {
         const scale = Math.max(0.25, 1 + oppRelZ / 140);
         const carW = 54 * scale;
-        const carH = 26 * scale;
+        const carH = 22 * scale;
         const cx = 160 - oppRelX * 12 * scale - carW / 2;
         const cy = 62 + (1 - scale) * 26;
+        // Roof / cabin on top
+        rm.fillStyle = '#f8fafc';
+        rm.fillRect(cx + carW * 0.16, cy - carH * 0.38, carW * 0.68, carH * 0.42);
+        // Main body below roof
         rm.fillStyle = '#ef4444';
         rm.fillRect(cx, cy, carW, carH);
+        // Headlights at front bumper
         rm.fillStyle = '#fef08a';
         rm.fillRect(cx + 3, cy + carH * 0.55, 6 * scale, 4 * scale);
         rm.fillRect(cx + carW - 9 * scale, cy + carH * 0.55, 6 * scale, 4 * scale);
