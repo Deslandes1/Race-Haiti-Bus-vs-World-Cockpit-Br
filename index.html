@@ -253,7 +253,7 @@
 
     /* Reference-Matched Gear + KMH + RPM/N2O Cluster under Rearview Mirror */
     #gear-speed-widget {
-      margin-top: 98px; /* sits right underneath the 3D rearview mirror */
+      margin-top: 98px;
       background: linear-gradient(90deg, rgba(12, 18, 30, 0.45) 0%, rgba(12, 18, 30, 0.88) 40%, rgba(12, 18, 30, 0.92) 100%);
       border-right: 3px solid #38bdf8;
       padding: 6px 10px;
@@ -923,6 +923,8 @@
     scene.fog = new THREE.FogExp2(0x7cc0fa, 0.0022);
 
     const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.08, 1200);
+    camera.up.set(0, 1, 0);
+
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -1093,24 +1095,21 @@
     // Golden-Red Suspension Bridge Side Towers & Sweeping Red Main Cables (Completely Open Sky Above Roadway)
     const bridgeRedMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.38, metalness: 0.25 });
     const towerZs = [160, 440, 720];
-    const TOWER_TOP_Y = 28.0;               // Rises cleanly outside the deck edges to y = 28
-    const CABLE_PEAK_Y = 27.5;              // Cable saddle peak at outer tower tops
-    const CABLE_LOW_Y = BRIDGE_DECK_Y + 6.5; // y = 12.5 at mid-span so cables stay high in the sky above vehicles
+    const TOWER_TOP_Y = 28.0;
+    const CABLE_PEAK_Y = 27.5;
+    const CABLE_LOW_Y = BRIDGE_DECK_Y + 6.5;
     const HALF_SPAN = 140.0;
     const TOWER_OFFSET_X = ROAD_WIDTH / 2 + 1.1;
 
     towerZs.forEach((tz) => {
       const towerGroup = new THREE.Group();
       [-1, 1].forEach((side) => {
-        // Side tower columns rise strictly OUTSIDE the road deck edges from water (y = -12.0) to y = 26.0
-        // Zero horizontal crossbars span across the roadway so the sky above the bus is 100% open
         const legHeight = TOWER_TOP_Y - (-12.0);
         const leg = new THREE.Mesh(new THREE.BoxGeometry(1.4, legHeight, 1.8), bridgeRedMat);
         leg.position.set(side * TOWER_OFFSET_X, -12.0 + legHeight / 2, tz);
         leg.castShadow = true;
         towerGroup.add(leg);
 
-        // Decorative twin capFinial on top of each outer tower post
         const cap = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.7, 2.1), bridgeRedMat);
         cap.position.set(side * TOWER_OFFSET_X, TOWER_TOP_Y + 0.35, tz);
         towerGroup.add(cap);
@@ -1118,7 +1117,6 @@
       scene.add(towerGroup);
     });
 
-    // Sweeping Right-Side-Up Catenary Red Main Suspension Cables + Vertical Suspender Ropes Strictly Outside Guardrails
     function getCableHeight(z) {
       let minDist = HALF_SPAN;
       towerZs.forEach((tz) => {
@@ -1130,7 +1128,7 @@
     }
 
     const suspenderMat = new THREE.MeshBasicMaterial({ color: 0xb91c1c });
-    const ropeBottomY = BRIDGE_DECK_Y + 1.35; // y = 7.35, anchored to outer red railing
+    const ropeBottomY = BRIDGE_DECK_Y + 1.35;
     for (let z = 20; z < 860; z += 10) {
       const y1 = getCableHeight(z);
       const y2 = getCableHeight(z + 10);
@@ -1146,7 +1144,6 @@
         mainSeg.position.set(cableX, midY, z + 5);
         scene.add(mainSeg);
 
-        // Vertical suspender rope hanging down from main cable (y1) to outer bridge railing (7.35)
         if (y1 > ropeBottomY + 0.25) {
           const ropeHeight = y1 - ropeBottomY;
           const vRope = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, ropeHeight, 6), suspenderMat);
@@ -1156,7 +1153,7 @@
       });
     }
 
-    // Checkered Finish Line on Bridge Deck Surface + Side Finish Pylons (Open Sky Overhead)
+    // Checkered Finish Line on Bridge Deck Surface + Side Finish Pylons
     const finishGroup = new THREE.Group();
     for (let i = -6; i <= 6; i++) {
       const tile = new THREE.Mesh(
@@ -1180,22 +1177,39 @@
        3. PLAYER HAITI BUS & HIGH-DETAIL FIRST-PERSON COCKPIT + LIVE MIRRORS
        ========================================================================= */
     const playerBus = new THREE.Group();
+    playerBus.rotation.order = 'YXZ';
 
-    // Exterior Haiti Bus Body (visible in Chase Camera & Rearview Reflection)
+    // Exterior Haiti Bus Body (Upright: Wheels on bottom, roof & windows on top)
     const busBody = new THREE.Mesh(
-      new THREE.BoxGeometry(2.35, 1.95, 5.4),
+      new THREE.BoxGeometry(2.35, 1.85, 5.4),
       new THREE.MeshStandardMaterial({ color: 0x00209F, roughness: 0.35 })
     );
-    busBody.position.set(0, 1.25, 0);
+    busBody.position.set(0, 1.38, 0);
     busBody.castShadow = true;
     playerBus.add(busBody);
 
     const busRedStripe = new THREE.Mesh(
-      new THREE.BoxGeometry(2.4, 0.65, 5.45),
+      new THREE.BoxGeometry(2.4, 0.62, 5.45),
       new THREE.MeshStandardMaterial({ color: 0xD21034, roughness: 0.4 })
     );
-    busRedStripe.position.set(0, 0.75, 0);
+    busRedStripe.position.set(0, 0.88, 0);
     playerBus.add(busRedStripe);
+
+    const busRoofCap = new THREE.Mesh(
+      new THREE.BoxGeometry(2.26, 0.16, 5.25),
+      new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.38 })
+    );
+    busRoofCap.position.set(0, 2.38, 0);
+    playerBus.add(busRoofCap);
+
+    const busWindowMat = new THREE.MeshStandardMaterial({ color: 0x93c5fd, roughness: 0.15, metalness: 0.25 });
+    const busFrontGlass = new THREE.Mesh(new THREE.BoxGeometry(2.04, 0.68, 0.1), busWindowMat);
+    busFrontGlass.position.set(0, 1.78, 2.71);
+    playerBus.add(busFrontGlass);
+
+    const busRearGlass = new THREE.Mesh(new THREE.BoxGeometry(2.04, 0.68, 0.1), busWindowMat);
+    busRearGlass.position.set(0, 1.78, -2.71);
+    playerBus.add(busRearGlass);
 
     const wheelGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.35, 16);
     const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111827 });
@@ -1222,7 +1236,6 @@
     // --- FIRST-PERSON COCKPIT GROUP (Attached to Camera in Cockpit Mode) ---
     const cockpitGroup = new THREE.Group();
 
-    // Dynamic Canvas Textures for Speedometer, Dual Dash Gauges, Left Mirror & Rearview Mirror
     const speedoCanvas = document.createElement('canvas');
     speedoCanvas.width = 256; speedoCanvas.height = 160;
     const speedoCtx = speedoCanvas.getContext('2d');
@@ -1243,7 +1256,6 @@
     const rearMirrorCtx = rearMirrorCanvas.getContext('2d');
     const rearMirrorTex = new THREE.CanvasTexture(rearMirrorCanvas);
 
-    // Dark Charcoal Dashboard Base
     const dashMat = new THREE.MeshBasicMaterial({ color: 0x1b1f26 });
     const dashTrimMat = new THREE.MeshBasicMaterial({ color: 0x2c333f });
     const silverMat = new THREE.MeshBasicMaterial({ color: 0xcbd5e1 });
@@ -1254,14 +1266,12 @@
     dashMain.rotation.x = 0.12;
     cockpitGroup.add(dashMain);
 
-    // Instrument Binnacle Hood
     const hoodMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.27, 0.35, 18, 1, false, 0, Math.PI), dashTrimMat);
     hoodMesh.rotation.z = Math.PI / 2;
     hoodMesh.rotation.y = Math.PI / 2;
     hoodMesh.position.set(-0.18, -0.23, -0.68);
     cockpitGroup.add(hoodMesh);
 
-    // Central Speedometer Cluster Screen
     const speedoScreen = new THREE.Mesh(
       new THREE.PlaneGeometry(0.32, 0.2),
       new THREE.MeshBasicMaterial({ map: speedoTex })
@@ -1270,7 +1280,6 @@
     speedoScreen.rotation.x = -0.15;
     cockpitGroup.add(speedoScreen);
 
-    // Two Round Auxiliary Dash Gauges on Top Center Dash (Matching Reference Image)
     [-0.02, 0.14].forEach((gx) => {
       const pod = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.058, 0.05, 18), dashMat);
       pod.rotation.x = Math.PI / 2;
@@ -1285,7 +1294,6 @@
       cockpitGroup.add(face);
     });
 
-    // Center Console Radio / Navigation Display
     const consoleScreen = new THREE.Mesh(
       new THREE.PlaneGeometry(0.24, 0.18),
       new THREE.MeshBasicMaterial({ color: 0xd97706 })
@@ -1294,7 +1302,6 @@
     consoleScreen.rotation.y = -0.22;
     cockpitGroup.add(consoleScreen);
 
-    // Left A-Pillar & Roof Header Frame
     const aPillar = new THREE.Mesh(new THREE.BoxGeometry(0.11, 1.15, 0.12), dashTrimMat);
     aPillar.position.set(-0.78, 0.15, -0.62);
     aPillar.rotation.z = -0.26;
@@ -1304,7 +1311,6 @@
     roofHeader.position.set(0.1, 0.56, -0.56);
     cockpitGroup.add(roofHeader);
 
-    // Left Yellow Side Mirror Housing + Live Highway Reflection Glass
     const sideMirrorHousing = new THREE.Mesh(
       new THREE.BoxGeometry(0.34, 0.2, 0.12),
       new THREE.MeshBasicMaterial({ color: 0xeab308 })
@@ -1321,7 +1327,6 @@
     sideMirrorGlass.rotation.y = 0.24;
     cockpitGroup.add(sideMirrorGlass);
 
-    // Top-Right Rearview Mirror Housing + Live Behind-View Reflection
     const rearMirrorHousing = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.17, 0.05), dashMat);
     rearMirrorHousing.position.set(0.42, 0.37, -0.52);
     rearMirrorHousing.rotation.y = -0.14;
@@ -1335,7 +1340,6 @@
     rearMirrorGlass.rotation.y = -0.14;
     cockpitGroup.add(rearMirrorGlass);
 
-    // Rotating Steering Wheel & Driver Hands
     const steeringWheelGroup = new THREE.Group();
     steeringWheelGroup.position.set(-0.18, -0.35, -0.45);
     steeringWheelGroup.rotation.x = -0.35;
@@ -1351,13 +1355,11 @@
     hubBadge.position.z = 0.022;
     steeringWheelGroup.add(hubBadge);
 
-    // Left & Right Spokes
     [-1, 1].forEach((s) => {
       const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.035, 0.025), silverMat);
       spoke.position.set(s * 0.11, -0.02, 0);
       steeringWheelGroup.add(spoke);
 
-      // Driver Hand & Forearm gripping the wheel rim
       const hand = new THREE.Mesh(new THREE.SphereGeometry(0.036, 12, 10), skinMat);
       hand.scale.set(0.95, 1.25, 0.85);
       hand.position.set(s * 0.195, 0.03, 0.015);
@@ -1378,21 +1380,22 @@
        4. OPPONENT WORLD RACER & HIGHWAY TRAFFIC VEHICLES
        ========================================================================= */
     const opponentCar = new THREE.Group();
+    opponentCar.rotation.order = 'YXZ';
     const oppBodyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.35 });
     const oppRoofMat = new THREE.MeshStandardMaterial({ color: 0xce1126, roughness: 0.35 });
     const oppStripeMat = new THREE.MeshStandardMaterial({ color: 0x002b7f });
 
     const oppBody = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.75, 4.1), oppBodyMat);
-    oppBody.position.y = 0.65;
+    oppBody.position.y = 0.72;
     oppBody.castShadow = true;
     opponentCar.add(oppBody);
 
     const oppCabin = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.55, 2.2), oppRoofMat);
-    oppCabin.position.set(0, 1.25, -0.15);
+    oppCabin.position.set(0, 1.32, -0.15);
     opponentCar.add(oppCabin);
 
     const oppStripe = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.78, 4.14), oppStripeMat);
-    oppStripe.position.y = 0.66;
+    oppStripe.position.y = 0.73;
     opponentCar.add(oppStripe);
 
     [[-0.95, 0.38, 1.3], [0.95, 0.38, 1.3], [-0.95, 0.38, -1.3], [0.95, 0.38, -1.3]].forEach(([wx, wy, wz]) => {
@@ -1417,25 +1420,34 @@
       oppStripeMat.color.setHex(t.stripe);
     }
 
-    // Highway Traffic Cars to weave past for Near-Miss Bonus Points
+    // Highway Traffic Cars to weave past for Near-Miss Bonus Points (Upright Chassis, Cabin & Wheels)
     const trafficPool = [];
     const trafficColors = [0xf8fafc, 0x94a3b8, 0xdc2626, 0x0284c7, 0xf59e0b, 0x10b981];
     for (let i = 0; i < 14; i++) {
       const tGroup = new THREE.Group();
+      tGroup.rotation.order = 'YXZ';
       const c = trafficColors[i % trafficColors.length];
       const b = new THREE.Mesh(
-        new THREE.BoxGeometry(1.85, 0.85, 3.9),
+        new THREE.BoxGeometry(1.85, 0.78, 3.9),
         new THREE.MeshStandardMaterial({ color: c, roughness: 0.4 })
       );
-      b.position.y = 0.65;
+      b.position.y = 0.72;
+      b.castShadow = true;
       tGroup.add(b);
 
       const cab = new THREE.Mesh(
         new THREE.BoxGeometry(1.5, 0.55, 2.0),
         new THREE.MeshStandardMaterial({ color: 0x1e293b })
       );
-      cab.position.set(0, 1.3, -0.1);
+      cab.position.set(0, 1.34, -0.1);
       tGroup.add(cab);
+
+      [[-0.92, 0.36, 1.25], [0.92, 0.36, 1.25], [-0.92, 0.36, -1.25], [0.92, 0.36, -1.25]].forEach(([wx, wy, wz]) => {
+        const tw = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.24, 12), wheelMat);
+        tw.rotation.z = Math.PI / 2;
+        tw.position.set(wx, wy, wz);
+        tGroup.add(tw);
+      });
 
       scene.add(tGroup);
       trafficPool.push({
@@ -1458,9 +1470,8 @@
     const CAR_HALF_L = 2.05;
 
     function resolveVehicleSeparation(dt) {
-      // 1. Solid physical collision resolution between Haiti Bus and Opponent Racer
-      const minLatSep = BUS_HALF_W + CAR_HALF_W + 0.15; // 2.28m center-to-center width
-      const minLongSep = BUS_HALF_L + CAR_HALF_L + 0.25; // 5.00m center-to-center length
+      const minLatSep = BUS_HALF_W + CAR_HALF_W + 0.15;
+      const minLongSep = BUS_HALF_L + CAR_HALF_L + 0.25;
       const dxOpp = state.oppX - state.playerX;
       const dzOpp = state.oppZ - state.playerZ;
 
@@ -1469,7 +1480,6 @@
         const overlapZ = minLongSep - Math.abs(dzOpp);
 
         if (overlapX < overlapZ) {
-          // Side-by-side bump: push vehicles apart laterally on the bridge deck
           const pushSign = dxOpp >= 0 ? 1 : -1;
           state.playerX -= pushSign * overlapX * 0.52;
           state.oppX += pushSign * overlapX * 0.52;
@@ -1477,13 +1487,10 @@
           state.oppX = Math.max(-LANE_LIMIT, Math.min(LANE_LIMIT, state.oppX));
           audio.playImpact();
         } else {
-          // Front-to-rear bumper contact: prevent opponent from ever passing through/over bus
           if (dzOpp >= 0) {
-            // Opponent is ahead of bus
             state.oppZ = state.playerZ + minLongSep;
             state.speed = Math.min(state.speed, state.oppSpeed * 0.94);
           } else {
-            // Opponent is behind bus: push opponent cleanly behind and steer it to overtake
             state.oppZ = state.playerZ - minLongSep;
             state.oppSpeed = Math.min(state.oppSpeed, Math.max(8, state.speed * 0.95));
             const escapeDir = state.playerX > 0 ? -1 : 1;
@@ -1493,7 +1500,6 @@
         }
       }
 
-      // 2. Solid physical separation between Opponent Racer and Highway Traffic
       trafficPool.forEach((t) => {
         const dxT = state.oppX - t.x;
         const dzT = state.oppZ - t.z;
@@ -1519,7 +1525,6 @@
        5. DYNAMIC COCKPIT GAUGE & LIVE SIDE / REARVIEW MIRROR RENDERER
        ========================================================================= */
     function renderCockpitTextures(speedKmh, rpmRatio, steerAngle, oppDz, oppDx, playerZ) {
-      // 1. Central Speedometer Cluster
       speedoCtx.fillStyle = '#0f172a';
       speedoCtx.fillRect(0, 0, 256, 160);
 
@@ -1529,7 +1534,6 @@
       speedoCtx.arc(128, 108, 72, Math.PI * 0.85, Math.PI * 2.15);
       speedoCtx.stroke();
 
-      // Speedometer Needle
       const speedFrac = Math.min(1, speedKmh / 220);
       const needleAngle = Math.PI * 0.85 + speedFrac * (Math.PI * 1.3);
       speedoCtx.strokeStyle = '#ef4444';
@@ -1545,7 +1549,6 @@
       speedoCtx.fillText(`${Math.round(speedKmh)} KMH`, 128, 145);
       speedoTex.needsUpdate = true;
 
-      // 2. Twin Auxiliary Dash Gauges (RPM & Turbo Boost)
       auxGaugeCtx.fillStyle = '#090d16';
       auxGaugeCtx.fillRect(0, 0, 128, 128);
       auxGaugeCtx.strokeStyle = '#facc15';
@@ -1557,7 +1560,12 @@
       const auxAngle = Math.PI * 0.75 + Math.min(1, rpmRatio) * Math.PI * 1.5;
       auxGaugeCtx.strokeStyle = '#38bdf8';
       auxGaugeCtx.lineWidth = 4;
-      // 3. Left Yellow Side Mirror (Open Blue Sky & Clouds Overhead + Road Reflection Below)
+      auxGaugeCtx.beginPath();
+      auxGaugeCtx.moveTo(64, 64);
+      auxGaugeCtx.lineTo(64 + Math.cos(auxAngle) * 40, 64 + Math.sin(auxAngle) * 40);
+      auxGaugeCtx.stroke();
+      auxGaugeTex.needsUpdate = true;
+
       leftMirrorCtx.fillStyle = '#56a8f5';
       leftMirrorCtx.fillRect(0, 0, 256, 76);
       leftMirrorCtx.fillStyle = 'rgba(255, 255, 255, 0.72)';
@@ -1569,7 +1577,6 @@
       leftMirrorCtx.fillStyle = '#334155';
       leftMirrorCtx.fillRect(0, 76, 256, 68);
 
-      // Moving Dashed Lane Line in Left Mirror
       const dashOffset = (playerZ * 12) % 36;
       leftMirrorCtx.strokeStyle = '#f8fafc';
       leftMirrorCtx.lineWidth = 3;
@@ -1582,7 +1589,6 @@
       leftMirrorCtx.setLineDash([]);
       leftMirrorTex.needsUpdate = true;
 
-      // 4. Top-Right Rearview Mirror (Open Blue Sky, Sun & Clouds Overhead + Road Behind)
       rearMirrorCtx.fillStyle = '#56a8f5';
       rearMirrorCtx.fillRect(0, 0, 320, 62);
       rearMirrorCtx.fillStyle = 'rgba(255, 255, 255, 0.75)';
@@ -1598,7 +1604,6 @@
       rearMirrorCtx.fillStyle = '#334155';
       rearMirrorCtx.fillRect(0, 62, 320, 58);
 
-      // Perspective Road Lines in Rearview Mirror
       rearMirrorCtx.strokeStyle = '#facc15';
       rearMirrorCtx.lineWidth = 2;
       rearMirrorCtx.beginPath();
@@ -1608,7 +1613,6 @@
       rearMirrorCtx.lineTo(300, 120);
       rearMirrorCtx.stroke();
 
-      // Reflected Red Bridge Towers Behind
       rearMirrorCtx.strokeStyle = '#dc2626';
       rearMirrorCtx.lineWidth = 4;
       rearMirrorCtx.beginPath();
@@ -1618,7 +1622,6 @@
       rearMirrorCtx.lineTo(214, 56);
       rearMirrorCtx.stroke();
 
-      // Draw Opponent Car if Behind Player Bus (oppDz < 0)
       if (oppDz < -2 && oppDz > -160) {
         const distFactor = Math.max(0.18, 1 - Math.abs(oppDz) / 160);
         const carW = 46 * distFactor;
@@ -1646,7 +1649,7 @@
       headlightsOn: false,
       playerZ: 0,
       playerX: -1.55,
-      speed: 0, // m/s
+      speed: 0,
       steerAngle: 0,
       nitro: 100,
       boosting: false,
@@ -1660,7 +1663,6 @@
 
     const keys = { up: false, down: false, left: false, right: false, boost: false };
 
-    // DOM Elements
     const scoreValEl = document.getElementById('score-val');
     const distValEl = document.getElementById('dist-val');
     const gearDisplayEl = document.getElementById('gear-display');
@@ -1723,6 +1725,7 @@
         t.z = 65 + idx * 62;
         t.passed = false;
         t.mesh.position.set(t.x, BRIDGE_DECK_Y, t.z);
+        t.mesh.rotation.set(0, 0, 0);
       });
 
       scoreValEl.textContent = '0';
@@ -1770,7 +1773,6 @@
       setBanner(playerWon ? '🎉 VICTORY FOR HAITI!' : '🔥 GREAT RUN — TRY N2O BOOST NEXT TIME!');
     }
 
-    // UI Button Listeners
     modalStartBtn.addEventListener('click', () => {
       if (state.paused) {
         togglePause();
@@ -1795,7 +1797,6 @@
       soundToggleBtn.textContent = audio.muted ? '🔇 OFF' : '🔊 ON';
     });
 
-    // Helper for Hold Buttons (Touch + Mouse)
     function bindHoldButton(btn, keyName, extraClass = 'pressed') {
       const down = (e) => {
         e.preventDefault();
@@ -1821,7 +1822,6 @@
     bindHoldButton(document.getElementById('btn-gas'), 'up');
     bindHoldButton(n2oBoostBtn, 'boost', 'boosting');
 
-    // Keyboard Controls
     window.addEventListener('keydown', (e) => {
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
         e.preventDefault();
@@ -1852,7 +1852,7 @@
     });
 
     /* =========================================================================
-       7. MAIN SIMULATION & RENDER LOOP
+       7. MAIN SIMULATION & RENDER LOOP (UPRIGHT BUS, TRAFFIC & CAMERA)
        ========================================================================= */
     let lastTime = performance.now();
 
@@ -1862,7 +1862,6 @@
       lastTime = now;
 
       if (state.running && !state.paused) {
-        // Nitrous Boost Logic
         if (keys.boost && state.nitro > 2 && state.speed > 4) {
           state.boosting = true;
           state.nitro = Math.max(0, state.nitro - 28 * dt);
@@ -1873,8 +1872,7 @@
         nitroVignetteEl.classList.toggle('active', state.boosting);
         n2oFillEl.style.height = `${Math.round(state.nitro)}%`;
 
-        // Longitudinal Acceleration & Braking
-        const maxSpeedMs = state.boosting ? 56 : 44; // ~201 KMH with N2O, ~158 KMH normal
+        const maxSpeedMs = state.boosting ? 56 : 44;
         const accelRate = state.boosting ? 26 : 15;
 
         if (keys.up || state.boosting) {
@@ -1882,12 +1880,10 @@
         } else if (keys.down) {
           state.speed = Math.max(-10, state.speed - 28 * dt);
         } else {
-          // Gentle rolling drag
           state.speed *= (1 - 0.65 * dt);
           if (Math.abs(state.speed) < 0.15) state.speed = 0;
         }
 
-        // Steering & Wheel Rotation
         const targetSteer = (keys.left ? -1 : 0) + (keys.right ? 1 : 0);
         state.steerAngle += (targetSteer - state.steerAngle) * Math.min(1, 10 * dt);
         steeringWheelGroup.rotation.z = -state.steerAngle * 0.62;
@@ -1895,7 +1891,6 @@
         const lateralFactor = Math.min(1.25, Math.abs(state.speed) / 18 + 0.25);
         state.playerX += state.steerAngle * 9.5 * lateralFactor * dt;
 
-        // Guardrail Bounce Protection
         if (Math.abs(state.playerX) > LANE_LIMIT) {
           state.playerX = Math.sign(state.playerX) * LANE_LIMIT;
           state.speed *= 0.85;
@@ -1904,7 +1899,6 @@
 
         state.playerZ += state.speed * dt;
 
-        // Automatic 6-Speed Transmission (S1 .. S6)
         const kmh = Math.max(0, state.speed * 3.6);
         const newGear = Math.min(6, Math.max(1, Math.floor(kmh / 30) + 1));
         if (newGear !== state.gear) {
@@ -1915,7 +1909,6 @@
         const gearFloor = (state.gear - 1) * 30;
         const rpmRatio = Math.min(1, Math.max(0.15, (kmh - gearFloor) / 32));
 
-        // Update Top-Right RPM Segments & Digital Speed
         const litCount = Math.round(rpmRatio * rpmSegEls.length);
         rpmSegEls.forEach((seg, idx) => {
           seg.className = 'rpm-seg';
@@ -1928,25 +1921,20 @@
         kmhDisplayEl.textContent = String(Math.round(kmh)).padStart(3, '0');
         distValEl.textContent = (state.playerZ / 1000).toFixed(2).padStart(5, '0');
 
-        // Continuous Speed Distance Points
         if (state.speed > 5) {
           state.score += Math.round(state.speed * dt * 2.5);
           scoreValEl.textContent = String(state.score);
         }
 
-        // Update Opponent World Racer AI with Intelligent Lane-Changing Overtake
         const targetOppSpeed = 33 + Math.sin(state.oppZ * 0.015) * 4.5;
         state.oppSpeed += (targetOppSpeed - state.oppSpeed) * 2 * dt;
         state.oppZ += state.oppSpeed * dt;
 
-        // Choose safe overtake lane when approaching Haiti Bus or Traffic from behind
         let desiredOppX = 1.55;
         const dzFromBus = state.playerZ - state.oppZ;
         if (dzFromBus > -14 && dzFromBus < 38 && Math.abs(state.oppX - state.playerX) < 2.8) {
-          // Pick the side of the bridge with more open space around the bus
           desiredOppX = state.playerX > 0 ? -2.2 : 2.6;
         } else {
-          // Check traffic directly ahead of opponent
           for (let i = 0; i < trafficPool.length; i++) {
             const t = trafficPool[i];
             const dzT = t.z - state.oppZ;
@@ -1959,18 +1947,15 @@
         state.oppX += (desiredOppX - state.oppX) * Math.min(1, 3.8 * dt);
         state.oppX = Math.max(-LANE_LIMIT + 0.6, Math.min(LANE_LIMIT - 0.6, state.oppX));
 
-        // Update Highway Traffic & Near-Miss Overtake Bonus
         trafficPool.forEach((t) => {
           t.z += t.speed * dt;
           if (t.z < state.playerZ - 25) {
-            // Recycle ahead on bridge
             t.z = state.playerZ + 260 + Math.random() * 140;
             t.lane = Math.floor(Math.random() * 4);
             t.x = LANE_CENTERS[t.lane];
             t.passed = false;
           }
 
-          // Near-miss bonus when passing closely
           if (!t.passed && t.z < state.playerZ - 2.5 && t.z > state.playerZ - 12) {
             t.passed = true;
             const latGap = Math.abs(t.x - state.playerX);
@@ -1982,7 +1967,6 @@
             }
           }
 
-          // Solid Collision Resolution with Highway Traffic (Front/Rear & Side-by-Side)
           const dxBusT = state.playerX - t.x;
           const dzBusT = state.playerZ - t.z;
           const minBusTW = BUS_HALF_W + 0.95;
@@ -2004,16 +1988,14 @@
           }
 
           t.mesh.position.set(t.x, BRIDGE_DECK_Y, t.z);
+          t.mesh.rotation.set(0, 0, 0);
         });
 
-        // Resolve any remaining vehicle-to-vehicle overlap on the bridge deck
         resolveVehicleSeparation(dt);
 
-        // Audio Update
         const isScreeching = (keys.down && kmh > 45) || (Math.abs(state.steerAngle) > 0.75 && kmh > 95);
         audio.update(kmh, rpmRatio, state.boosting, isScreeching, true);
 
-        // Check Finish Line
         if (state.playerZ >= FINISH_Z) {
           finishRace(true);
         } else if (state.oppZ >= FINISH_Z) {
@@ -2023,25 +2005,25 @@
         audio.update(0, 0.1, false, false, false);
       }
 
-      // Position Player Bus, Opponent Car, and Active Camera strictly on the Bridge Deck (y = BRIDGE_DECK_Y)
+      // Always keep Haiti Bus, Opponent Car, and Camera upright on the Bridge Deck
       playerBus.position.set(state.playerX, BRIDGE_DECK_Y, state.playerZ);
-      playerBus.rotation.y = -state.steerAngle * 0.08;
-      opponentCar.position.set(state.oppX, BRIDGE_DECK_Y, state.oppZ);
+      playerBus.rotation.set(0, -state.steerAngle * 0.08, 0);
 
+      opponentCar.position.set(state.oppX, BRIDGE_DECK_Y, state.oppZ);
+      opponentCar.rotation.set(0, 0, 0);
+
+      camera.up.set(0, 1, 0);
       if (state.cockpitView) {
-        // First-Person Driver Seat inside Cockpit on Elevated Bridge Deck
         const shakeY = state.speed > 5 ? Math.sin(now * 0.045) * 0.006 * (state.speed / 45) : 0;
         camera.position.set(state.playerX - 0.25, BRIDGE_DECK_Y + 1.85 + shakeY, state.playerZ + 1.45);
         camera.lookAt(state.playerX - 0.25 + state.steerAngle * 1.4, BRIDGE_DECK_Y + 1.62, state.playerZ + 28);
         camera.rotation.z = -state.steerAngle * 0.025;
       } else {
-        // External Chase Camera on Elevated Bridge Deck
         camera.position.set(state.playerX * 0.85, BRIDGE_DECK_Y + 3.8, state.playerZ - 8.5);
         camera.lookAt(state.playerX, BRIDGE_DECK_Y + 1.5, state.playerZ + 14);
         camera.rotation.z = 0;
       }
 
-      // Render Dynamic Gauges & Live Side/Rearview Mirrors
       renderCockpitTextures(
         Math.max(0, state.speed * 3.6),
         Math.min(1, (state.speed * 3.6) / 180),
@@ -2054,14 +2036,12 @@
       renderer.render(scene, camera);
     }
 
-    // Handle Screen Resize
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // Initialize Default State & Start Render Loop
     applyOpponentCountry('dominican');
     resetGame();
     requestAnimationFrame(animate);
